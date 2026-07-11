@@ -142,44 +142,9 @@ La arquitectura objetivo busca la separación entre interfaz, backend, inteligen
 
 **Diagrama:**
 
-┌──────────────────┐
-│      Usuario     │
-│(Contador/Empresa)│
-└─────────┬────────┘
-          │
-          ▼
-┌──────────────────┐
-│     Frontend     │
-│ HTML/CSS/JS SPA  │
-│     Dashboard    │
-│     Historial    │
-└─────────┬────────┘
-          │ HTTPS
-          ▼
-┌──────────────────┐
-│     API REST     │
-│      FastAPI     │
-│                  │
-└─────────┬────────┘
-          │
- ┌────────┼─────────┐
- │        │         │
- ▼        ▼         ▼
-┌──────┐ ┌───────┐ ┌─────────────┐
-│ OCR  │ │Gemini │ │  Firebase   │
-│Tesser│ │ 2.5   │ │Auth/Firestore│
-│ act  │ │Flash  │ │             │
-└──────┘ └───────┘ └─────────────┘
-    │         │          │
-    └─────────┼──────────┘
-              │
-              ▼
-      ┌──────────────────┐
-      │ Datos procesados │
-      │ JSON estructurado│
-      │ Historial        │
-      │ Exportación      │
-      └──────────────────┘
+<img width="178" height="591" alt="Captura de pantalla 2026-07-11 154722" src="https://github.com/user-attachments/assets/71c22e17-5653-440c-bb12-98d6cfbddf5e" />
+
+
 
 ---
 
