@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReceiptIA - Historial</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 min-h-screen">
+
+    <nav class="bg-slate-900 px-8 py-4 text-white shadow-2xl sticky top-0 z-50">
+        <div class="container mx-auto flex flex-col lg:flex-row gap-4 justify-between items-center">
+            <div>
+                <h1 class="font-bold text-xl tracking-tight">
+                    ReceiptIA <span class="text-indigo-400 font-light">Historial</span>
+                </h1>
+
+                <p id="usuarioRolTexto" class="text-xs text-slate-300 mt-1">
+                    Verificando rol...
+                </p>
+            </div>
+
+            <div class="flex flex-wrap gap-3 justify-center">
+                <a href="Dashboard.html" class="text-xs bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg font-bold transition">
+                    Volver al Dashboard
+                </a>
+
+                <button onclick="exportarSeleccionadasExcel()" class="text-xs bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg font-bold transition">
+                    Exportar Seleccionadas
+                </button>
+
+                <button onclick="exportarCarpetaActualExcel()" class="text-xs bg-cyan-600 hover:bg-cyan-700 px-4 py-2 rounded-lg font-bold transition">
+                    Exportar Carpeta
+                </button>
+
+                <button onclick="exportarHistorialExcel()" class="text-xs bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg font-bold transition">
+                    Exportar Todo
+                </button>
+
+                <button onclick="limpiarHistorial()" class="text-xs bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-bold transition">
+                    Limpiar Historial
+                </button>
+
+                <a href="index.html" class="text-xs bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg transition border border-slate-700">
+                    Nueva Carga
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto py-10 px-6">
+
+        <div class="mb-8">
+            <h2 class="text-3xl font-black text-slate-800">
+                Historial de Facturas
+            </h2>
+
+            <p class="text-slate-500 mt-2">
+                Organiza facturas por carpetas/clientes, selecciona las que necesites y exporta solo la información requerida.
+            </p>
+
+            <p id="estadoFirebase" class="text-sm text-indigo-600 font-semibold mt-3">
+                Cargando datos desde Firebase...
+            </p>
+        </div>
+
+        <!-- TARJETAS RESUMEN -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-5 mb-8">
+            <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                <p class="text-slate-400 text-xs font-bold uppercase">Facturas visibles</p>
+                <p id="totalFacturas" class="text-3xl font-black text-slate-800 mt-2">0</p>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                <p class="text-slate-400 text-xs font-bold uppercase">Total visible</p>
+                <p id="totalAcumulado" class="text-3xl font-black text-indigo-600 mt-2">$0.00</p>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                <p class="text-slate-400 text-xs font-bold uppercase">Con anomalías</p>
+                <p id="totalAnomalias" class="text-3xl font-black text-red-600 mt-2">0</p>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                <p class="text-slate-400 text-xs font-bold uppercase">Sin anomalías</p>
+                <p id="sinAnomalias" class="text-3xl font-black text-emerald-600 mt-2">0</p>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                <p class="text-slate-400 text-xs font-bold uppercase">Seleccionadas</p>
+                <p id="totalSeleccionadas" class="text-3xl font-black text-cyan-600 mt-2">0</p>
+            </div>
+        </div>
+
+        <!-- PANEL DE CARPETAS -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6">
+                <div class="flex justify-between items-center mb-5">
+                    <div>
+                        <h3 class="text-xl font-black text-slate-800">Carpetas / Clientes</h3>
+                        <p class="text-slate-400 text-sm">Organiza tus facturas por cliente.</p>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 mb-5">
+                    <input 
+                        type="text" 
+                        id="nombreCarpetaInput" 
+                        placeholder="Nombre del cliente o carpeta"
+                        class="flex-1 border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+
+                    <button onclick="crearCarpeta()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-3 rounded-xl">
+                        Crear
+                    </button>
+                </div>
+
+                <div id="listaCarpetas" class="space-y-2"></div>
+            </div>
+
+            <div class="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-200 p-6">
+                <div class="flex flex-col lg:flex-row gap-4 lg:items-end lg:justify-between">
+                    <div>
+                        <p class="text-slate-400 text-xs font-bold uppercase">Vista actual</p>
+                        <h3 id="tituloVistaActual" class="text-2xl font-black text-slate-800 mt-1">
+                            Todas las facturas
+                        </h3>
+                        <p id="descripcionVistaActual" class="text-slate-500 text-sm mt-1">
+                            Mostrando todo el historial.
+                        </p>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="seleccionarTodoVisible()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-xl">
+                            Seleccionar todo visible
+                        </button>
+
+                        <button onclick="limpiarSeleccion()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold px-4 py-3 rounded-xl">
+                            Quitar selección
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <select 
+                        id="carpetaMoverSelect" 
+                        class="border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                        <option value="">Selecciona carpeta destino</option>
+                    </select>
+
+                    <button onclick="moverSeleccionadasACarpeta()" class="bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-bold px-4 py-3 rounded-xl">
+                        Mover seleccionadas
+                    </button>
+
+                    <button onclick="quitarSeleccionadasDeCarpeta()" class="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-4 py-3 rounded-xl">
+                        Sacar de carpeta
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLA HISTORIAL -->
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-500 text-xs uppercase tracking-wider">
+                            <th class="py-4 px-6 text-center">
+                                <input type="checkbox" id="checkTodos" onchange="toggleSeleccionTodoVisible()" class="w-4 h-4 accent-indigo-600">
+                            </th>
+                            <th class="py-4 px-6">Fecha de análisis</th>
+                            <th class="py-4 px-6">Carpeta</th>
+                            <th class="py-4 px-6">Usuario</th>
+                            <th class="py-4 px-6">Archivo</th>
+                            <th class="py-4 px-6">Comercio</th>
+                            <th class="py-4 px-6">Fecha factura</th>
+                            <th class="py-4 px-6 text-right">Total</th>
+                            <th class="py-4 px-6 text-center">Estado</th>
+                            <th class="py-4 px-6 text-center">Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="historialBody" class="divide-y divide-slate-100">
+                        <tr>
+                            <td colspan="10" class="py-10 px-6 text-center text-slate-400">
+                                Cargando historial...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+<script type="module">
+    import { auth, db } from "./firebase-config.js";
+
+    import {
+        onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
+    import {
+        collection,
+        doc,
+        getDoc,
+        getDocs,
+        setDoc,
+        updateDoc,
+        deleteDoc,
+        query,
+        where,
+        serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+    let carpetaActualId = 'todas';
+    let seleccionadas = new Set();
+
+    let usuarioActual = null;
+    let historialCache = [];
+    let carpetasCache = [];
+
+    const estadoFirebase = document.getElementById('estadoFirebase');
+    const usuarioRolTexto = document.getElementById('usuarioRolTexto');
+
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+            estadoFirebase.innerText = 'No hay una sesión activa. Redirigiendo al inicio...';
+            usuarioRolTexto.innerText = 'Sin sesión activa';
+
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1200);
+
+            return;
+        }
+
+        usuarioActual = await obtenerDatosUsuario(user);
+
+        actualizarTextoRol();
+
+        await cargarDatosDesdeFirebase();
+    });
+
+    async function obtenerDatosUsuario(user) {
+        const datosBase = {
+            uid: user.uid,
+            email: user.email,
+            username: user.displayName || user.email?.split('@')[0] || 'Usuario',
+            rol: 'auditor'
+        };
+
+        try {
+            const referenciaUsuario = doc(db, 'usuarios', user.uid);
+            const documentoUsuario = await getDoc(referenciaUsuario);
+
+            if (documentoUsuario.exists()) {
+                const datosFirestore = documentoUsuario.data();
+
+                return {
+                    uid: user.uid,
+                    email: datosFirestore.email || datosBase.email,
+                    username: datosFirestore.username || datosBase.username,
+                    rol: datosFirestore.rol || 'auditor'
+                };
+            }
+
+            return datosBase;
+
+        } catch (error) {
+            console.error('Error obteniendo datos del usuario:', error);
+            return datosBase;
+        }
+    }
+
+    function actualizarTextoRol() {
+        if (!usuarioActual) {
+            usuarioRolTexto.innerText = 'Sin usuario';
+            return;
+        }
+
+        const rolLegible = usuarioActual.rol === 'admin'
+            ? 'Administrador'
+            : 'Auditor';
+
+        const alcance = usuarioActual.rol === 'admin'
+            ? 'Puede ver todas las facturas.'
+            : 'Solo ve sus propias facturas.';
+
+        usuarioRolTexto.innerText = `Usuario: ${usuarioActual.username} | Rol: ${rolLegible} | ${alcance}`;
+    }
+
+    function usuarioEsAdmin() {
+        return usuarioActual && usuarioActual.rol === 'admin';
+    }
+
+    function obtenerHistorial() {
+        return historialCache;
+    }
+
+    function obtenerCarpetas() {
+        return carpetasCache;
+    }
+
+    function guardarHistorialLocal(historial) {
+        historialCache = historial;
+
+        try {
+            localStorage.setItem('facturas_historial', JSON.stringify(historial));
+        } catch (error) {
+            console.error('No se pudo guardar respaldo local del historial:', error);
+        }
+    }
+
+    function guardarCarpetasLocal(carpetas) {
+        carpetasCache = carpetas;
+
+        try {
+            localStorage.setItem('carpetas_facturas', JSON.stringify(carpetas));
+        } catch (error) {
+            console.error('No se pudo guardar respaldo local de carpetas:', error);
+        }
+    }
+
+    function obtenerHistorialLocalRespaldo() {
+        return JSON.parse(localStorage.getItem('facturas_historial')) || [];
+    }
+
+    function obtenerCarpetasLocalRespaldo() {
+        return JSON.parse(localStorage.getItem('carpetas_facturas')) || [];
+    }
+
+    function convertirTimestampAObjetoPlano(valor) {
+        if (valor && typeof valor.toDate === 'function') {
+            return {
+                seconds: valor.seconds,
+                nanoseconds: valor.nanoseconds
+            };
+        }
+
+        if (Array.isArray(valor)) {
+            return valor.map(item => convertirTimestampAObjetoPlano(item));
+        }
+
+        if (valor !== null && typeof valor === 'object') {
+            const objetoPlano = {};
+
+            Object.keys(valor).forEach(clave => {
+                objetoPlano[clave] = convertirTimestampAObjetoPlano(valor[clave]);
+            });
+
+            return objetoPlano;
+        }
+
+        return valor;
+    }
+
+    function normalizarFacturaHistorial(item, idDocumento = null) {
+        const itemNormalizado = convertirTimestampAObjetoPlano(item);
+
+        itemNormalizado.id = itemNormalizado.id || idDocumento || ('factura_' + Date.now());
+
+        if (!itemNormalizado.hasOwnProperty('uidUsuario')) {
+            itemNormalizado.uidUsuario = null;
+        }
+
+        if (!itemNormalizado.hasOwnProperty('carpetaId')) {
+            itemNormalizado.carpetaId = null;
+        }
+
+        if (!itemNormalizado.hasOwnProperty('imagen')) {
+            itemNormalizado.imagen = null;
+        }
+
+        if (!itemNormalizado.hasOwnProperty('factura')) {
+            itemNormalizado.factura = {};
+        }
+
+        return itemNormalizado;
+    }
+
+    function normalizarCarpeta(item, idDocumento = null) {
+        const carpeta = convertirTimestampAObjetoPlano(item);
+
+        carpeta.id = carpeta.id || idDocumento || ('carpeta_' + Date.now());
+        carpeta.nombre = carpeta.nombre || 'Carpeta sin nombre';
+
+        if (!carpeta.hasOwnProperty('uidUsuario')) {
+            carpeta.uidUsuario = null;
+        }
+
+        return carpeta;
+    }
+
+    function obtenerValorOrden(item) {
+        if (item.fechaRegistroTimestamp && item.fechaRegistroTimestamp.seconds) {
+            return Number(item.fechaRegistroTimestamp.seconds);
+        }
+
+        const numeroId = Number(String(item.id || '').split('-')[0]);
+
+        if (!isNaN(numeroId)) {
+            return numeroId;
+        }
+
+        return 0;
+    }
+
+    async function cargarDatosDesdeFirebase() {
+        try {
+            estadoFirebase.innerText = usuarioEsAdmin()
+                ? 'Cargando todas las facturas desde Firebase...'
+                : 'Cargando tus facturas desde Firebase...';
+
+            let qFacturas;
+            let qCarpetas;
+
+            if (usuarioEsAdmin()) {
+                qFacturas = query(collection(db, 'facturas'));
+                qCarpetas = query(collection(db, 'carpetas'));
+            } else {
+                qFacturas = query(
+                    collection(db, 'facturas'),
+                    where('uidUsuario', '==', usuarioActual.uid)
+                );
+
+                qCarpetas = query(
+                    collection(db, 'carpetas'),
+                    where('uidUsuario', '==', usuarioActual.uid)
+                );
+            }
+
+            const facturasSnapshot = await getDocs(qFacturas);
+            const carpetasSnapshot = await getDocs(qCarpetas);
+
+            const facturas = [];
+            const carpetas = [];
+
+            facturasSnapshot.forEach(documento => {
+                facturas.push(normalizarFacturaHistorial(documento.data(), documento.id));
+            });
+
+            carpetasSnapshot.forEach(documento => {
+                carpetas.push(normalizarCarpeta(documento.data(), documento.id));
+            });
+
+            facturas.sort((a, b) => obtenerValorOrden(b) - obtenerValorOrden(a));
+
+            guardarHistorialLocal(facturas);
+            guardarCarpetasLocal(carpetas);
+
+            seleccionadas.clear();
+            carpetaActualId = 'todas';
+
+            cargarCarpetas();
+            cargarHistorial();
+
+            estadoFirebase.innerText = usuarioEsAdmin()
+                ? 'Datos cargados desde Firebase correctamente. Vista de administrador: mostrando todas las facturas.'
+                : 'Datos cargados desde Firebase correctamente. Vista de auditor: mostrando solo tus facturas.';
+
+        } catch (error) {
+            console.error('Error cargando desde Firebase:', error);
+
+            estadoFirebase.innerText = 'No se pudo cargar desde Firebase. Mostrando respaldo local del navegador.';
+
+            historialCache = obtenerHistorialLocalRespaldo().map(item => normalizarFacturaHistorial(item));
+            carpetasCache = obtenerCarpetasLocalRespaldo().map(item => normalizarCarpeta(item));
+
+            if (!usuarioEsAdmin()) {
+                historialCache = historialCache.filter(item => item.uidUsuario === usuarioActual.uid);
+                carpetasCache = carpetasCache.filter(item => item.uidUsuario === usuarioActual.uid);
+            }
+
+            cargarCarpetas();
+            cargarHistorial();
+        }
+    }
+
+    async function crearCarpeta() {
+        const input = document.getElementById('nombreCarpetaInput');
+        const nombre = input.value.trim();
+
+        if (!nombre) {
+            alert('Escribe el nombre de la carpeta o cliente.');
+            return;
+        }
+
+        let carpetas = obtenerCarpetas();
+
+        const existe = carpetas.some(c => 
+            c.nombre.toLowerCase() === nombre.toLowerCase() &&
+            c.uidUsuario === usuarioActual.uid
+        );
+
+        if (existe) {
+            alert('Ya existe una carpeta con ese nombre para este usuario.');
+            return;
+        }
+
+        const nuevaCarpeta = {
+            id: 'carpeta_' + Date.now(),
+            uidUsuario: usuarioActual.uid,
+            nombre: nombre,
+            fechaCreacion: new Date().toLocaleString(),
+            creador: usuarioActual.username,
+            creadorEmail: usuarioActual.email || ''
+        };
+
+        try {
+            await setDoc(doc(db, 'carpetas', nuevaCarpeta.id), {
+                ...nuevaCarpeta,
+                fechaCreacionTimestamp: serverTimestamp()
+            });
+
+            carpetas.push(nuevaCarpeta);
+            guardarCarpetasLocal(carpetas);
+
+            input.value = '';
+
+            cargarCarpetas();
+            cargarHistorial();
+
+        } catch (error) {
+            console.error('Error creando carpeta:', error);
+            alert('No se pudo crear la carpeta en Firebase.');
+        }
+    }
+
+    async function eliminarCarpeta(id) {
+        const carpetas = obtenerCarpetas();
+        const carpeta = carpetas.find(c => c.id === id);
+
+        if (!carpeta) {
+            alert('No se encontró la carpeta.');
+            return;
+        }
+
+        if (!usuarioEsAdmin() && carpeta.uidUsuario !== usuarioActual.uid) {
+            alert('No puedes eliminar una carpeta que no te pertenece.');
+            return;
+        }
+
+        const confirmar = confirm(
+            `¿Seguro que deseas eliminar la carpeta "${carpeta.nombre}"?\n\nLas facturas NO se eliminarán, solo quedarán sin carpeta.`
+        );
+
+        if (!confirmar) return;
+
+        try {
+            await deleteDoc(doc(db, 'carpetas', id));
+
+            const facturasAActualizar = historialCache.filter(item => item.carpetaId === id);
+
+            for (const item of facturasAActualizar) {
+                await updateDoc(doc(db, 'facturas', item.id), {
+                    carpetaId: null
+                });
+            }
+
+            const nuevasCarpetas = carpetas.filter(c => c.id !== id);
+            guardarCarpetasLocal(nuevasCarpetas);
+
+            let historial = obtenerHistorial();
+
+            historial = historial.map(item => {
+                if (item.carpetaId === id) {
+                    item.carpetaId = null;
+                }
+
+                return item;
+            });
+
+            guardarHistorialLocal(historial);
+
+            if (carpetaActualId === id) {
+                carpetaActualId = 'todas';
+            }
+
+            seleccionadas.clear();
+
+            cargarCarpetas();
+            cargarHistorial();
+
+        } catch (error) {
+            console.error('Error eliminando carpeta:', error);
+            alert('No se pudo eliminar la carpeta en Firebase.');
+        }
+    }
+
+    function cambiarVistaCarpeta(id) {
+        carpetaActualId = id;
+        seleccionadas.clear();
+
+        document.getElementById('checkTodos').checked = false;
+
+        cargarCarpetas();
+        cargarHistorial();
+    }
+
+    function obtenerNombreCarpeta(id) {
+        if (!id) return 'Sin carpeta';
+
+        const carpetas = obtenerCarpetas();
+        const carpeta = carpetas.find(c => c.id === id);
+
+        return carpeta ? carpeta.nombre : 'Sin carpeta';
+    }
+
+    function obtenerDetalleCarpeta(id) {
+        if (!id) return 'Sin carpeta';
+
+        const carpetas = obtenerCarpetas();
+        const carpeta = carpetas.find(c => c.id === id);
+
+        if (!carpeta) return 'Sin carpeta';
+
+        if (usuarioEsAdmin() && carpeta.creador) {
+            return `${carpeta.nombre} (${carpeta.creador})`;
+        }
+
+        return carpeta.nombre;
+    }
+
+    function cargarCarpetas() {
+        const carpetas = obtenerCarpetas();
+        const historial = obtenerHistorial();
+        const lista = document.getElementById('listaCarpetas');
+        const select = document.getElementById('carpetaMoverSelect');
+
+        lista.innerHTML = '';
+        select.innerHTML = '<option value="">Selecciona carpeta destino</option>';
+
+        const totalTodas = historial.length;
+        const totalSinCarpeta = historial.filter(item => !item.carpetaId).length;
+
+        lista.innerHTML += `
+            <button onclick="cambiarVistaCarpeta('todas')" class="w-full flex justify-between items-center px-4 py-3 rounded-xl text-sm font-bold transition ${carpetaActualId === 'todas' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}">
+                <span>Todas las facturas</span>
+                <span>${totalTodas}</span>
+            </button>
+        `;
+
+        lista.innerHTML += `
+            <button onclick="cambiarVistaCarpeta('sin_carpeta')" class="w-full flex justify-between items-center px-4 py-3 rounded-xl text-sm font-bold transition ${carpetaActualId === 'sin_carpeta' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}">
+                <span>Sin carpeta</span>
+                <span>${totalSinCarpeta}</span>
+            </button>
+        `;
+
+        if (carpetas.length === 0) {
+            lista.innerHTML += `
+                <div class="text-center text-slate-400 text-sm py-4">
+                    Aún no hay carpetas disponibles.
+                </div>
+            `;
+        }
+
+        carpetas.forEach(carpeta => {
+            const cantidad = historial.filter(item => item.carpetaId === carpeta.id).length;
+            const nombreVisible = usuarioEsAdmin() && carpeta.creador
+                ? `${carpeta.nombre} (${carpeta.creador})`
+                : carpeta.nombre;
+
+            lista.innerHTML += `
+                <div class="flex gap-2">
+                    <button onclick="cambiarVistaCarpeta('${carpeta.id}')" class="flex-1 flex justify-between items-center px-4 py-3 rounded-xl text-sm font-bold transition ${carpetaActualId === carpeta.id ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}">
+                        <span class="truncate">${nombreVisible}</span>
+                        <span>${cantidad}</span>
+                    </button>
+
+                    <button onclick="eliminarCarpeta('${carpeta.id}')" class="bg-red-50 hover:bg-red-100 text-red-600 px-3 rounded-xl text-xs font-bold">
+                        X
+                    </button>
+                </div>
+            `;
+
+            select.innerHTML += `
+                <option value="${carpeta.id}">${nombreVisible}</option>
+            `;
+        });
+    }
+
+    function obtenerHistorialVisible() {
+        const historial = obtenerHistorial();
+
+        if (carpetaActualId === 'todas') {
+            return historial;
+        }
+
+        if (carpetaActualId === 'sin_carpeta') {
+            return historial.filter(item => !item.carpetaId);
+        }
+
+        return historial.filter(item => item.carpetaId === carpetaActualId);
+    }
+
+    function actualizarTituloVista() {
+        const titulo = document.getElementById('tituloVistaActual');
+        const descripcion = document.getElementById('descripcionVistaActual');
+
+        if (carpetaActualId === 'todas') {
+            titulo.innerText = 'Todas las facturas';
+            descripcion.innerText = usuarioEsAdmin()
+                ? 'Mostrando todas las facturas registradas en el sistema.'
+                : 'Mostrando tus facturas registradas.';
+            return;
+        }
+
+        if (carpetaActualId === 'sin_carpeta') {
+            titulo.innerText = 'Facturas sin carpeta';
+            descripcion.innerText = 'Mostrando facturas que aún no han sido asignadas a un cliente.';
+            return;
+        }
+
+        const nombre = obtenerDetalleCarpeta(carpetaActualId);
+        titulo.innerText = nombre;
+        descripcion.innerText = 'Mostrando solo las facturas dentro de esta carpeta.';
+    }
+
+    function cargarHistorial() {
+        const historialVisible = obtenerHistorialVisible();
+        const tbody = document.getElementById('historialBody');
+
+        actualizarTituloVista();
+
+        tbody.innerHTML = '';
+
+        if (historialVisible.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="10" class="py-10 px-6 text-center text-slate-400">
+                        No hay facturas para mostrar en esta vista.
+                    </td>
+                </tr>
+            `;
+
+            actualizarResumen(historialVisible);
+            actualizarContadorSeleccionadas();
+            actualizarCheckTodos();
+            return;
+        }
+
+        historialVisible.forEach(item => {
+            const factura = item.factura || {};
+            const tieneAnomalias = factura.tiene_anomalias === true;
+            const estaSeleccionada = seleccionadas.has(item.id);
+
+            const estadoClase = tieneAnomalias
+                ? 'bg-red-50 text-red-600'
+                : 'bg-emerald-50 text-emerald-600';
+
+            const estadoTexto = tieneAnomalias
+                ? 'Con anomalías'
+                : 'Correcta';
+
+            const fila = `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="py-4 px-6 text-center">
+                        <input 
+                            type="checkbox" 
+                            class="w-4 h-4 accent-indigo-600 factura-check" 
+                            data-id="${item.id}"
+                            ${estaSeleccionada ? 'checked' : ''}
+                            onchange="toggleFacturaSeleccionada('${item.id}')"
+                        >
+                    </td>
+
+                    <td class="py-4 px-6 text-sm text-slate-600 whitespace-nowrap">
+                        ${item.fechaRegistro || 'Sin fecha'}
+                    </td>
+
+                    <td class="py-4 px-6 text-sm text-slate-600">
+                        <span class="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold">
+                            ${obtenerDetalleCarpeta(item.carpetaId)}
+                        </span>
+                    </td>
+
+                    <td class="py-4 px-6 text-sm text-slate-600">
+                        ${item.usuario || 'No detectado'}
+                    </td>
+
+                    <td class="py-4 px-6 text-sm text-slate-600 max-w-[180px] truncate">
+                        ${item.nombreArchivo || 'Sin archivo'}
+                    </td>
+
+                    <td class="py-4 px-6 text-sm font-semibold text-slate-800">
+                        ${factura.comercio || 'No detectado'}
+                    </td>
+
+                    <td class="py-4 px-6 text-sm text-slate-600">
+                        ${factura.fecha || 'No detectada'}
+                    </td>
+
+                    <td class="py-4 px-6 text-right text-sm font-bold text-slate-900">
+                        $${Number(factura.total || 0).toFixed(2)}
+                    </td>
+
+                    <td class="py-4 px-6 text-center">
+                        <span class="${estadoClase} text-xs font-bold px-3 py-1 rounded-full">
+                            ${estadoTexto}
+                        </span>
+                    </td>
+
+                    <td class="py-4 px-6 text-center whitespace-nowrap">
+                        <button onclick="verFactura('${item.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-2 rounded-lg">
+                            Ver
+                        </button>
+
+                        <button onclick="eliminarFactura('${item.id}')" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg ml-2">
+                            Eliminar
+                        </button>
+                    </td>
+                </tr>
+            `;
+
+            tbody.innerHTML += fila;
+        });
+
+        actualizarResumen(historialVisible);
+        actualizarContadorSeleccionadas();
+        actualizarCheckTodos();
+    }
+
+    function actualizarResumen(historial) {
+        const totalFacturas = historial.length;
+
+        let totalAcumulado = 0;
+        let conAnomalias = 0;
+        let sinAnomalias = 0;
+
+        historial.forEach(item => {
+            const factura = item.factura || {};
+
+            totalAcumulado += Number(factura.total || 0);
+
+            if (factura.tiene_anomalias === true) {
+                conAnomalias++;
+            } else {
+                sinAnomalias++;
+            }
+        });
+
+        document.getElementById('totalFacturas').innerText = totalFacturas;
+        document.getElementById('totalAcumulado').innerText = `$${totalAcumulado.toFixed(2)}`;
+        document.getElementById('totalAnomalias').innerText = conAnomalias;
+        document.getElementById('sinAnomalias').innerText = sinAnomalias;
+    }
+
+    function actualizarContadorSeleccionadas() {
+        document.getElementById('totalSeleccionadas').innerText = seleccionadas.size;
+    }
+
+    function toggleFacturaSeleccionada(id) {
+        if (seleccionadas.has(id)) {
+            seleccionadas.delete(id);
+        } else {
+            seleccionadas.add(id);
+        }
+
+        actualizarContadorSeleccionadas();
+        actualizarCheckTodos();
+    }
+
+    function seleccionarTodoVisible() {
+        const visibles = obtenerHistorialVisible();
+
+        visibles.forEach(item => {
+            seleccionadas.add(item.id);
+        });
+
+        cargarHistorial();
+    }
+
+    function limpiarSeleccion() {
+        seleccionadas.clear();
+        document.getElementById('checkTodos').checked = false;
+
+        cargarHistorial();
+    }
+
+    function toggleSeleccionTodoVisible() {
+        const checkTodos = document.getElementById('checkTodos');
+        const visibles = obtenerHistorialVisible();
+
+        if (checkTodos.checked) {
+            visibles.forEach(item => seleccionadas.add(item.id));
+        } else {
+            visibles.forEach(item => seleccionadas.delete(item.id));
+        }
+
+        cargarHistorial();
+    }
+
+    function actualizarCheckTodos() {
+        const checkTodos = document.getElementById('checkTodos');
+        const visibles = obtenerHistorialVisible();
+
+        if (visibles.length === 0) {
+            checkTodos.checked = false;
+            return;
+        }
+
+        const todosSeleccionados = visibles.every(item => seleccionadas.has(item.id));
+        checkTodos.checked = todosSeleccionados;
+    }
+
+    async function moverSeleccionadasACarpeta() {
+        const carpetaDestino = document.getElementById('carpetaMoverSelect').value;
+
+        if (!carpetaDestino) {
+            alert('Selecciona una carpeta destino.');
+            return;
+        }
+
+        if (seleccionadas.size === 0) {
+            alert('Selecciona al menos una factura.');
+            return;
+        }
+
+        try {
+            for (const id of seleccionadas) {
+                await updateDoc(doc(db, 'facturas', id), {
+                    carpetaId: carpetaDestino
+                });
+            }
+
+            let historial = obtenerHistorial();
+
+            historial = historial.map(item => {
+                if (seleccionadas.has(item.id)) {
+                    item.carpetaId = carpetaDestino;
+                }
+
+                return item;
+            });
+
+            guardarHistorialLocal(historial);
+
+            seleccionadas.clear();
+
+            cargarCarpetas();
+            cargarHistorial();
+
+            alert('Facturas movidas correctamente.');
+
+        } catch (error) {
+            console.error('Error moviendo facturas:', error);
+            alert('No se pudieron mover las facturas en Firebase.');
+        }
+    }
+
+    async function quitarSeleccionadasDeCarpeta() {
+        if (seleccionadas.size === 0) {
+            alert('Selecciona al menos una factura.');
+            return;
+        }
+
+        const confirmar = confirm('¿Deseas sacar las facturas seleccionadas de su carpeta actual?');
+
+        if (!confirmar) return;
+
+        try {
+            for (const id of seleccionadas) {
+                await updateDoc(doc(db, 'facturas', id), {
+                    carpetaId: null
+                });
+            }
+
+            let historial = obtenerHistorial();
+
+            historial = historial.map(item => {
+                if (seleccionadas.has(item.id)) {
+                    item.carpetaId = null;
+                }
+
+                return item;
+            });
+
+            guardarHistorialLocal(historial);
+
+            seleccionadas.clear();
+
+            cargarCarpetas();
+            cargarHistorial();
+
+            alert('Facturas removidas de la carpeta correctamente.');
+
+        } catch (error) {
+            console.error('Error sacando facturas de carpeta:', error);
+            alert('No se pudieron sacar las facturas de la carpeta en Firebase.');
+        }
+    }
+
+    function verFactura(id) {
+        const historial = obtenerHistorial();
+        const item = historial.find(f => f.id === id);
+
+        if (!item) {
+        alert('No se encontró la factura.');
+        return;
+        }
+
+        localStorage.setItem('factura_actual', JSON.stringify(item.factura));
+        localStorage.setItem('factura_actual_id', item.id);
+
+        if (item.imagen) {
+            localStorage.setItem('factura_actual_imagen', item.imagen);
+        } else {
+            localStorage.removeItem('factura_actual_imagen');
+        }
+
+        /*
+            Cuando se abre una factura desde el historial, se debe mostrar
+            como factura individual, no como parte del lote anterior.
+        */
+        localStorage.setItem('dashboard_modo', 'individual');
+        localStorage.removeItem('dashboard_facturas_ids');
+        localStorage.removeItem('dashboard_factura_indice');
+
+        window.location.href = 'Dashboard.html';
+    }
+
+    async function eliminarFactura(id) {
+        const historial = obtenerHistorial();
+        const item = historial.find(f => f.id === id);
+
+        if (!item) {
+            alert('No se encontró la factura.');
+            return;
+        }
+
+        if (!usuarioEsAdmin() && item.uidUsuario !== usuarioActual.uid) {
+            alert('No puedes eliminar una factura que no te pertenece.');
+            return;
+        }
+
+        const confirmar = confirm('¿Seguro que deseas eliminar esta factura del historial?');
+
+        if (!confirmar) return;
+
+        try {
+            await deleteDoc(doc(db, 'facturas', id));
+
+            let historialActualizado = obtenerHistorial();
+
+            historialActualizado = historialActualizado.filter(item => item.id !== id);
+
+            guardarHistorialLocal(historialActualizado);
+
+            seleccionadas.delete(id);
+
+            cargarCarpetas();
+            cargarHistorial();
+
+        } catch (error) {
+            console.error('Error eliminando factura:', error);
+            alert('No se pudo eliminar la factura en Firebase.');
+        }
+    }
+
+    async function limpiarHistorial() {
+        const mensaje = usuarioEsAdmin()
+            ? '¿Seguro que deseas eliminar TODO el historial del sistema?\n\nLas carpetas se conservarán, pero quedarán vacías.'
+            : '¿Seguro que deseas eliminar TODO tu historial?\n\nLas carpetas se conservarán, pero quedarán vacías.';
+
+        const confirmar = confirm(mensaje);
+
+        if (!confirmar) return;
+
+        try {
+            const historial = obtenerHistorial();
+
+            for (const item of historial) {
+                await deleteDoc(doc(db, 'facturas', item.id));
+            }
+
+            guardarHistorialLocal([]);
+
+            localStorage.removeItem('factura_actual');
+            localStorage.removeItem('factura_actual_id');
+            localStorage.removeItem('factura_actual_imagen');
+
+            seleccionadas.clear();
+
+            cargarCarpetas();
+            cargarHistorial();
+
+        } catch (error) {
+            console.error('Error limpiando historial:', error);
+            alert('No se pudo limpiar el historial en Firebase.');
+        }
+    }
+
+    function prepararFilasExcel(historial) {
+        const filas = [];
+
+        historial.forEach(item => {
+            const factura = item.factura || {};
+
+            const anomaliasTexto = factura.anomalias && factura.anomalias.length > 0
+                ? factura.anomalias.map(a => `${a.tipo || 'Anomalía'}: ${a.descripcion || ''}`).join(' | ')
+                : '';
+
+            const carpetaNombre = obtenerDetalleCarpeta(item.carpetaId);
+
+            if (factura.items && factura.items.length > 0) {
+                factura.items.forEach(producto => {
+                    filas.push({
+                        Carpeta: carpetaNombre,
+                        Archivo: item.nombreArchivo || '',
+                        Fecha_Analisis: item.fechaRegistro || '',
+                        Usuario: item.usuario || '',
+                        UID_Usuario: item.uidUsuario || '',
+                        Comercio: factura.comercio || '',
+                        NIT: factura.nit_emisor || '',
+                        Fecha_Factura: factura.fecha || '',
+                        Descripcion: producto.descripcion || '',
+                        Monto: Number(producto.monto || 0),
+                        Subtotal: Number(factura.subtotal || 0),
+                        IVA: Number(factura.iva || 0),
+                        Total: Number(factura.total || 0),
+                        Tipo: factura.es_exenta ? 'Exenta' : 'Gravada',
+                        Tiene_Anomalias: factura.tiene_anomalias ? 'Sí' : 'No',
+                        Anomalias: anomaliasTexto
+                    });
+                });
+            } else {
+                filas.push({
+                    Carpeta: carpetaNombre,
+                    Archivo: item.nombreArchivo || '',
+                    Fecha_Analisis: item.fechaRegistro || '',
+                    Usuario: item.usuario || '',
+                    UID_Usuario: item.uidUsuario || '',
+                    Comercio: factura.comercio || '',
+                    NIT: factura.nit_emisor || '',
+                    Fecha_Factura: factura.fecha || '',
+                    Descripcion: '',
+                    Monto: 0,
+                    Subtotal: Number(factura.subtotal || 0),
+                    IVA: Number(factura.iva || 0),
+                    Total: Number(factura.total || 0),
+                    Tipo: factura.es_exenta ? 'Exenta' : 'Gravada',
+                    Tiene_Anomalias: factura.tiene_anomalias ? 'Sí' : 'No',
+                    Anomalias: anomaliasTexto
+                });
+            }
+        });
+
+        return filas;
+    }
+
+    function descargarExcel(historial, nombreArchivo) {
+        if (historial.length === 0) {
+            alert('No hay facturas para exportar.');
+            return;
+        }
+
+        const filas = prepararFilasExcel(historial);
+
+        const ws = XLSX.utils.json_to_sheet(filas);
+        const wb = XLSX.utils.book_new();
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Facturas');
+        XLSX.writeFile(wb, nombreArchivo);
+    }
+
+    function exportarHistorialExcel() {
+        const historial = obtenerHistorial();
+
+        const nombreArchivo = usuarioEsAdmin()
+            ? 'Historial_Completo_Sistema.xlsx'
+            : 'Historial_Mis_Facturas.xlsx';
+
+        descargarExcel(historial, nombreArchivo);
+    }
+
+    function exportarSeleccionadasExcel() {
+        if (seleccionadas.size === 0) {
+            alert('Selecciona al menos una factura para exportar.');
+            return;
+        }
+
+        const historial = obtenerHistorial();
+        const facturasSeleccionadas = historial.filter(item => seleccionadas.has(item.id));
+
+        descargarExcel(facturasSeleccionadas, 'Facturas_Seleccionadas.xlsx');
+    }
+
+    function exportarCarpetaActualExcel() {
+        if (carpetaActualId === 'todas') {
+            alert('Primero selecciona una carpeta específica para exportarla.');
+            return;
+        }
+
+        const facturasCarpeta = obtenerHistorialVisible();
+
+        if (facturasCarpeta.length === 0) {
+            alert('Esta carpeta no tiene facturas para exportar.');
+            return;
+        }
+
+        let nombre = 'Facturas_Sin_Carpeta';
+
+        if (carpetaActualId !== 'sin_carpeta') {
+            nombre = obtenerDetalleCarpeta(carpetaActualId)
+                .replaceAll(' ', '_')
+                .replaceAll('/', '_')
+                .replaceAll('\\', '_')
+                .replaceAll('(', '')
+                .replaceAll(')', '');
+        }
+
+        descargarExcel(facturasCarpeta, `${nombre}.xlsx`);
+    }
+
+    window.crearCarpeta = crearCarpeta;
+    window.eliminarCarpeta = eliminarCarpeta;
+    window.cambiarVistaCarpeta = cambiarVistaCarpeta;
+    window.seleccionarTodoVisible = seleccionarTodoVisible;
+    window.limpiarSeleccion = limpiarSeleccion;
+    window.toggleSeleccionTodoVisible = toggleSeleccionTodoVisible;
+    window.toggleFacturaSeleccionada = toggleFacturaSeleccionada;
+    window.moverSeleccionadasACarpeta = moverSeleccionadasACarpeta;
+    window.quitarSeleccionadasDeCarpeta = quitarSeleccionadasDeCarpeta;
+    window.verFactura = verFactura;
+    window.eliminarFactura = eliminarFactura;
+    window.limpiarHistorial = limpiarHistorial;
+    window.exportarHistorialExcel = exportarHistorialExcel;
+    window.exportarSeleccionadasExcel = exportarSeleccionadasExcel;
+    window.exportarCarpetaActualExcel = exportarCarpetaActualExcel;
+</script>
+
+</body>
+</html>

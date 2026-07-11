@@ -1,0 +1,29 @@
+# Entorno virtual
+Backend/venv/
+venv/
+
+# Variables privadas
+Backend/.env
+.env
+
+# Caché de Python
+__pycache__/
+Backend/__pycache__/
+*.pyc
+*.pyo
+
+# Carpetas de carga o temporales
+Backend/Uploads/
+temp_uploads/
+
+# Logs
+*.log
+Backend/*.log
+Frontend/*.log
+
+# VS Code
+.vscode/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

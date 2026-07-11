@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReceiptIA - Panel de Control</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .editable-input:focus {
+            outline: 2px solid #6366f1;
+            background-color: #fefce8;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 min-h-screen">
+
+    <nav class="bg-slate-900 px-8 py-4 text-white shadow-2xl sticky top-0 z-50">
+        <div class="container mx-auto flex flex-col lg:flex-row gap-4 justify-between items-center">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">ReceiptIA</span>
+                <h1 class="font-bold text-xl tracking-tight">
+                    ReceiptIA <span class="text-indigo-400 font-light">Auditor</span>
+                </h1>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-4 justify-center">
+                <span id="userDisplay" class="text-sm font-semibold text-indigo-300"></span>
+
+                <button onclick="exportarExcel()" class="text-xs bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg font-bold transition">
+                    Exportar Datos
+                </button>
+
+                <a href="Historial.html" class="text-xs bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg font-bold transition">
+                    Historial
+                </a>
+
+                <a href="index.html" class="text-xs bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg transition border border-slate-700">
+                    Nueva Carga
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto py-10 px-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+            <!-- PANEL IZQUIERDO -->
+            <div class="lg:col-span-4">
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden sticky top-24">
+
+                    <!-- IMAGEN ORIGINAL -->
+                    <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-500 text-xs uppercase tracking-widest">
+                            Imagen Original
+                        </h3>
+
+                        <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded font-bold">
+                            CLIC PARA AMPLIAR
+                        </span>
+                    </div>
+
+                    <div class="p-6 border-b border-slate-100">
+                        <div id="imagenBox" class="bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 flex items-center justify-center min-h-[260px]">
+                            <img 
+                                id="facturaImagen" 
+                                src="" 
+                                alt="Imagen original de la factura" 
+                                class="w-full max-h-[360px] object-contain bg-white hidden cursor-zoom-in hover:opacity-90 transition"
+                                onclick="abrirImagenGrande()"
+                            >
+
+                            <p id="sinImagenTexto" class="text-slate-400 text-sm text-center px-6">
+                                No hay imagen original disponible para esta factura.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- RAW DATA -->
+                    <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-500 text-xs uppercase tracking-widest">
+                            Lectura de IA
+                        </h3>
+
+                        <span class="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded font-bold">
+                            RAW DATA
+                        </span>
+                    </div>
+
+                    <div id="rawText" class="p-6 text-xs font-mono text-slate-500 whitespace-pre-wrap h-[330px] overflow-y-auto leading-relaxed"></div>
+                </div>
+            </div>
+
+            <!-- PANEL DERECHO -->
+            <div class="lg:col-span-8">
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-8">
+
+                    <div class="flex justify-between items-center mb-8">
+                        <div class="w-full">
+                            <h2 class="text-2xl font-bold text-slate-800">
+                                Análisis de Resultados
+                            </h2>
+
+                            <p class="text-slate-500 text-sm mt-1">
+                                Compara la imagen original con los datos extraídos por la IA antes de exportarlos.
+                            </p>
+
+                            <p id="estadoGuardado" class="text-sm font-semibold text-indigo-600 mt-3">
+                                Verificando conexión con Firebase...
+                            </p>
+
+                            <!-- NAVEGACIÓN DE FACTURAS POR LOTE -->
+                            <div id="navegacionLoteBox" class="hidden mt-5 bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                                <div class="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
+                                    <div>
+                                        <p class="text-slate-400 text-xs font-bold uppercase">
+                                            Revisión de lote
+                                        </p>
+
+                                        <p id="indicadorFacturaLote" class="text-slate-700 text-sm font-bold mt-1">
+                                            Factura 1 de 1
+                                        </p>
+
+                                        <p id="nombreArchivoLote" class="text-slate-500 text-xs mt-1">
+                                            Archivo actual
+                                        </p>
+                                    </div>
+
+                                    <div class="flex flex-wrap gap-2">
+                                        <button 
+                                            id="btnFacturaAnterior"
+                                            onclick="cambiarFacturaLote(-1)"
+                                            class="bg-slate-800 hover:bg-slate-900 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-bold px-4 py-3 rounded-xl"
+                                        >
+                                            Anterior
+                                        </button>
+
+                                        <button 
+                                            id="btnFacturaSiguiente"
+                                            onclick="cambiarFacturaLote(1)"
+                                            class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-bold px-4 py-3 rounded-xl"
+                                        >
+                                            Siguiente
+                                        </button>
+
+                                        <a href="Historial.html" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-3 rounded-xl">
+                                            Ver historial
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CAJA DE ANOMALÍAS -->
+                    <div id="anomaliasBox" class="hidden mb-8 bg-red-50 border border-red-200 rounded-2xl p-6">
+                        <h3 class="text-red-700 font-bold text-lg mb-2">
+                            Anomalías detectadas en la factura
+                        </h3>
+
+                        <p class="text-red-600 text-sm mb-4">
+                            La IA encontró posibles errores o inconsistencias. Revisa los detalles antes de exportar los datos.
+                        </p>
+
+                        <div id="anomaliasLista" class="space-y-3"></div>
+                    </div>
+
+                    <!-- CAJA SIN ANOMALÍAS -->
+                    <div id="sinAnomaliasBox" class="hidden mb-8 bg-emerald-50 border border-emerald-200 rounded-2xl p-6">
+                        <h3 class="text-emerald-700 font-bold text-lg mb-2">
+                            Factura sin anomalías detectadas
+                        </h3>
+
+                        <p class="text-emerald-600 text-sm">
+                            No se encontraron inconsistencias evidentes en los datos analizados.
+                        </p>
+                    </div>
+
+                    <!-- TABLA -->
+                    <div class="overflow-hidden rounded-xl border border-slate-100">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-400 text-[11px] uppercase tracking-wider">
+                                    <th class="py-4 px-6">Concepto en Factura</th>
+                                    <th class="py-4 px-6 text-right">Monto ($)</th>
+                                    <th class="py-4 px-6 text-center">Categoría</th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="tableBody" class="divide-y divide-slate-50"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- TOTALES -->
+                    <div class="mt-10 bg-indigo-50/50 rounded-2xl p-8 border border-indigo-100 flex flex-col md:flex-row justify-end items-center gap-12">
+                        <div class="text-right">
+                            <p class="text-indigo-400 text-[10px] font-bold uppercase tracking-widest">
+                                Subtotal
+                            </p>
+
+                            <p id="subtotalDisplay" class="text-2xl font-bold text-slate-700">
+                                $0.00
+                            </p>
+                        </div>
+
+                        <div class="text-right">
+                            <p class="text-indigo-500 text-[10px] font-bold uppercase tracking-widest italic">
+                                IVA 13%
+                            </p>
+
+                            <p id="ivaDisplay" class="text-2xl font-bold text-indigo-600">
+                                $0.00
+                            </p>
+                        </div>
+
+                        <div class="text-right border-l border-indigo-200 pl-10">
+                            <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+                                Total Detectado
+                            </p>
+
+                            <p id="totalDisplay" class="text-4xl font-black text-slate-900">
+                                $0.00
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL PARA VER IMAGEN GRANDE -->
+    <div id="imagenModal" class="hidden fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center p-6">
+        <button 
+            onclick="cerrarImagenGrande()" 
+            class="absolute top-6 right-8 text-white text-4xl font-bold hover:text-red-400 transition"
+        >
+            &times;
+        </button>
+
+        <div class="max-w-7xl w-full max-h-[90vh] flex items-center justify-center">
+            <img 
+                id="imagenGrande" 
+                src="" 
+                alt="Factura ampliada" 
+                class="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl bg-white"
+            >
+        </div>
+
+        <p class="absolute bottom-5 left-0 right-0 text-center text-white/70 text-sm">
+            Presiona ESC o haz clic fuera de la imagen para cerrar
+        </p>
+    </div>
+
+<script type="module">
+    import { auth, db } from "./firebase-config.js";
+
+    import {
+        onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
+    import {
+        doc,
+        getDoc,
+        updateDoc,
+        serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+    let usuarioActual = null;
+    let facturaActual = null;
+    let facturaActualId = null;
+
+    let facturasLoteIds = [];
+    let indiceFacturaLote = 0;
+
+    const estadoGuardado = document.getElementById('estadoGuardado');
+
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+            estadoGuardado.innerText = 'No hay una sesión activa. Redirigiendo al inicio...';
+
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1200);
+
+            return;
+        }
+
+        usuarioActual = await obtenerDatosUsuario(user);
+
+        mostrarUsuario();
+
+        cargarFacturaDesdeLocalStorage();
+    });
+
+    async function obtenerDatosUsuario(user) {
+        const datosBase = {
+            uid: user.uid,
+            email: user.email,
+            username: user.displayName || user.email?.split('@')[0] || 'Usuario',
+            rol: 'auditor'
+        };
+
+        try {
+            const referenciaUsuario = doc(db, 'usuarios', user.uid);
+            const documentoUsuario = await getDoc(referenciaUsuario);
+
+            if (documentoUsuario.exists()) {
+                const datosFirestore = documentoUsuario.data();
+
+                return {
+                    uid: user.uid,
+                    email: datosFirestore.email || datosBase.email,
+                    username: datosFirestore.username || datosBase.username,
+                    rol: datosFirestore.rol || 'auditor'
+                };
+            }
+
+            return datosBase;
+
+        } catch (error) {
+            console.error('Error obteniendo datos del usuario:', error);
+            return datosBase;
+        }
+    }
+
+    function mostrarUsuario() {
+        if (!usuarioActual) {
+            document.getElementById('userDisplay').innerText = '';
+            return;
+        }
+
+        const rolLegible = usuarioActual.rol === 'admin'
+            ? 'Administrador'
+            : 'Auditor';
+
+        document.getElementById('userDisplay').innerText = `Usuario: ${usuarioActual.username} | Rol: ${rolLegible}`;
+    }
+
+    function cargarFacturaDesdeLocalStorage() {
+        const dataRaw = localStorage.getItem('factura_actual');
+        facturaActualId = localStorage.getItem('factura_actual_id');
+
+        if (!dataRaw) {
+            document.getElementById('rawText').innerText = 'No hay datos cargados. Regresa a la pantalla inicial y selecciona una factura.';
+            estadoGuardado.innerText = 'No hay factura activa para editar.';
+            configurarNavegacionLote();
+            return;
+        }
+
+        facturaActual = JSON.parse(dataRaw);
+
+        const imagenFactura = localStorage.getItem('factura_actual_imagen');
+        const facturaImagen = document.getElementById('facturaImagen');
+        const sinImagenTexto = document.getElementById('sinImagenTexto');
+
+        if (imagenFactura) {
+            facturaImagen.src = imagenFactura;
+            facturaImagen.classList.remove('hidden');
+            sinImagenTexto.classList.add('hidden');
+        } else {
+            facturaImagen.classList.add('hidden');
+            sinImagenTexto.classList.remove('hidden');
+        }
+
+        mostrarRawData(facturaActual);
+        mostrarAnomalias(facturaActual);
+        llenarTablaItems(facturaActual);
+
+        const total = Number(facturaActual.total || 0);
+        const esExenta = Boolean(facturaActual.es_exenta);
+
+        actualizarPantallaTotales(total, esExenta, facturaActual);
+
+        estadoGuardado.innerText = facturaActualId
+            ? 'Factura cargada. Los cambios manuales se guardarán en Firebase.'
+            : 'Factura cargada sin ID. Los cambios solo se guardarán localmente.';
+
+        configurarNavegacionLote();
+    }
+
+    function abrirImagenGrande() {
+        const facturaImagen = document.getElementById('facturaImagen');
+        const imagenActual = facturaImagen.src;
+
+        if (!imagenActual) {
+            return;
+        }
+
+        document.getElementById('imagenGrande').src = imagenActual;
+        document.getElementById('imagenModal').classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function cerrarImagenGrande() {
+        document.getElementById('imagenModal').classList.add('hidden');
+        document.getElementById('imagenGrande').src = '';
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    document.getElementById('imagenModal').addEventListener('click', function(e) {
+        if (e.target.id === 'imagenModal') {
+            cerrarImagenGrande();
+        }
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            cerrarImagenGrande();
+        }
+    });
+
+    function mostrarRawData(factura) {
+        const anomaliasTexto = factura.anomalias && factura.anomalias.length > 0
+            ? factura.anomalias.map((a, i) => `${i + 1}. ${a.tipo || 'Anomalía'} - ${a.descripcion || 'Sin descripción'}`).join('\n')
+            : 'No se detectaron anomalías';
+
+        document.getElementById('rawText').innerText =
+            `COMERCIO: ${factura.comercio || 'No detectado'}\n` +
+            `NIT: ${factura.nit_emisor || 'No detectado'}\n` +
+            `FECHA: ${factura.fecha || 'No detectada'}\n` +
+            `SUBTOTAL: $${Number(factura.subtotal || 0).toFixed(2)}\n` +
+            `IVA: $${Number(factura.iva || 0).toFixed(2)}\n` +
+            `TOTAL: $${Number(factura.total || 0).toFixed(2)}\n` +
+            `TIPO: ${factura.es_exenta ? 'EXENTA' : 'GRAVADA'}\n` +
+            `TIENE ANOMALÍAS: ${factura.tiene_anomalias ? 'SÍ' : 'NO'}\n\n` +
+            `ANOMALÍAS:\n${anomaliasTexto}`;
+    }
+
+    function mostrarAnomalias(factura) {
+        const anomaliasBox = document.getElementById('anomaliasBox');
+        const sinAnomaliasBox = document.getElementById('sinAnomaliasBox');
+        const anomaliasLista = document.getElementById('anomaliasLista');
+
+        const tieneAnomalias = factura.tiene_anomalias === true && factura.anomalias && factura.anomalias.length > 0;
+
+        if (!tieneAnomalias) {
+            anomaliasBox.classList.add('hidden');
+            sinAnomaliasBox.classList.remove('hidden');
+            return;
+        }
+
+        sinAnomaliasBox.classList.add('hidden');
+        anomaliasBox.classList.remove('hidden');
+        anomaliasLista.innerHTML = '';
+
+        factura.anomalias.forEach((anomalia, index) => {
+            const item = document.createElement('div');
+
+            item.className = 'bg-white border border-red-100 rounded-xl p-4';
+
+            item.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="bg-red-100 text-red-700 font-bold rounded-full w-7 h-7 flex items-center justify-center text-sm">
+                        ${index + 1}
+                    </div>
+
+                    <div class="flex-1">
+                        <h4 class="font-bold text-red-700">
+                            ${anomalia.tipo || 'Anomalía detectada'}
+                        </h4>
+
+                        <p class="text-slate-700 text-sm mt-1">
+                            <strong>Ubicación:</strong> ${anomalia.ubicacion || 'No especificada'}
+                        </p>
+
+                        <p class="text-slate-700 text-sm mt-1">
+                            ${anomalia.descripcion || 'Se encontró una inconsistencia en la factura.'}
+                        </p>
+
+                        <div class="grid md:grid-cols-2 gap-3 mt-3 text-sm">
+                            <div class="bg-slate-50 rounded-lg p-3">
+                                <span class="text-slate-400 font-bold text-xs uppercase">
+                                    Valor detectado
+                                </span>
+
+                                <p class="font-semibold text-slate-700">
+                                    ${anomalia.valor_detectado || 'No indicado'}
+                                </p>
+                            </div>
+
+                            <div class="bg-slate-50 rounded-lg p-3">
+                                <span class="text-slate-400 font-bold text-xs uppercase">
+                                    Valor esperado
+                                </span>
+
+                                <p class="font-semibold text-slate-700">
+                                    ${anomalia.valor_esperado || 'No indicado'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            anomaliasLista.appendChild(item);
+        });
+    }
+
+    function llenarTablaItems(factura) {
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = '';
+
+        if (factura.items && factura.items.length > 0) {
+            factura.items.forEach((item, index) => {
+                const monto = Number(item.monto || 0);
+
+                const row = `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="py-4 px-6 text-slate-600 text-sm font-medium">
+                            ${item.descripcion || 'Sin descripción'}
+                        </td>
+
+                        <td class="py-4 px-6 text-right">
+                            <input 
+                                type="number" 
+                                step="0.01" 
+                                value="${monto.toFixed(2)}"
+                                data-index="${index}"
+                                class="monto-input editable-input bg-transparent text-right font-bold text-slate-900 w-24 p-1 rounded"
+                                onchange="recalcularTotalesManual()"
+                            >
+                        </td>
+
+                        <td class="py-4 px-6 text-center">
+                            <span class="bg-indigo-50 text-indigo-600 text-[10px] font-bold px-2 py-1 rounded-full uppercase">
+                                Detectado
+                            </span>
+                        </td>
+                    </tr>
+                `;
+
+                tableBody.innerHTML += row;
+            });
+        } else {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="3" class="py-8 px-6 text-center text-slate-400 text-sm">
+                        No se detectaron productos o servicios en la factura.
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    function actualizarPantallaTotales(total, esExenta, factura = null) {
+        total = Number(total || 0);
+
+        let subtotal = total;
+        let iva = 0;
+
+        if (factura && factura.subtotal !== undefined && factura.iva !== undefined) {
+            subtotal = Number(factura.subtotal || 0);
+            iva = Number(factura.iva || 0);
+        } else {
+            if (!esExenta) {
+                subtotal = total / 1.13;
+                iva = total - subtotal;
+            }
+        }
+
+        document.getElementById('totalDisplay').innerText = `$${total.toFixed(2)}`;
+        document.getElementById('subtotalDisplay').innerText = `$${subtotal.toFixed(2)}`;
+
+        if (esExenta) {
+            document.getElementById('ivaDisplay').innerHTML = `$${iva.toFixed(2)} <span class="text-[10px] text-slate-400 font-normal ml-1">(Exento)</span>`;
+        } else {
+            document.getElementById('ivaDisplay').innerText = `$${iva.toFixed(2)}`;
+        }
+    }
+
+    function actualizarFacturaEnHistorialLocal(factura) {
+        if (!facturaActualId) {
+            return;
+        }
+
+        let historial = JSON.parse(localStorage.getItem('facturas_historial')) || [];
+
+        historial = historial.map(item => {
+            if (item.id === facturaActualId) {
+                item.factura = factura;
+            }
+
+            return item;
+        });
+
+        localStorage.setItem('facturas_historial', JSON.stringify(historial));
+    }
+
+    function limpiarUndefined(objeto) {
+        if (Array.isArray(objeto)) {
+            return objeto.map(item => limpiarUndefined(item));
+        }
+
+        if (objeto !== null && typeof objeto === 'object') {
+            const objetoLimpio = {};
+
+            Object.keys(objeto).forEach(clave => {
+                if (objeto[clave] !== undefined) {
+                    objetoLimpio[clave] = limpiarUndefined(objeto[clave]);
+                }
+            });
+
+            return objetoLimpio;
+        }
+
+        return objeto;
+    }
+
+    async function actualizarFacturaEnFirestore(factura) {
+        if (!facturaActualId) {
+            estadoGuardado.innerText = 'No hay ID de factura. Cambio guardado solo localmente.';
+            return;
+        }
+
+        if (!auth.currentUser) {
+            estadoGuardado.innerText = 'No hay sesión activa. Cambio guardado solo localmente.';
+            return;
+        }
+
+        try {
+            estadoGuardado.innerText = 'Guardando cambios en Firebase...';
+
+            const facturaLimpia = limpiarUndefined(factura);
+
+            await updateDoc(doc(db, 'facturas', facturaActualId), {
+                factura: facturaLimpia,
+                fechaUltimaEdicion: new Date().toLocaleString(),
+                fechaUltimaEdicionTimestamp: serverTimestamp(),
+                editadoPorUid: usuarioActual ? usuarioActual.uid : auth.currentUser.uid,
+                editadoPorUsuario: usuarioActual ? usuarioActual.username : 'Usuario'
+            });
+
+            estadoGuardado.innerText = 'Cambios guardados en Firebase correctamente.';
+
+        } catch (error) {
+            console.error('Error actualizando factura en Firebase:', error);
+            estadoGuardado.innerText = 'No se pudo guardar en Firebase. El cambio quedó solo en este navegador.';
+            alert('No se pudo actualizar la factura en Firebase. Revisa las reglas o la conexión.');
+        }
+    }
+
+    async function recalcularTotalesManual() {
+        const inputs = document.querySelectorAll('.monto-input');
+        let nuevoTotal = 0;
+
+        inputs.forEach(input => {
+            nuevoTotal += Number(input.value || 0);
+        });
+
+        const factura = JSON.parse(localStorage.getItem('factura_actual'));
+
+        if (!factura) return;
+
+        factura.total = nuevoTotal;
+
+        if (factura.es_exenta) {
+            factura.subtotal = nuevoTotal;
+            factura.iva = 0;
+        } else {
+            factura.subtotal = nuevoTotal / 1.13;
+            factura.iva = nuevoTotal - factura.subtotal;
+        }
+
+        inputs.forEach(input => {
+            const index = Number(input.dataset.index);
+
+            if (factura.items && factura.items[index]) {
+                factura.items[index].monto = Number(input.value || 0);
+            }
+        });
+
+        facturaActual = factura;
+
+        localStorage.setItem('factura_actual', JSON.stringify(factura));
+
+        actualizarFacturaEnHistorialLocal(factura);
+
+        actualizarPantallaTotales(factura.total, factura.es_exenta, factura);
+        mostrarRawData(factura);
+
+        await actualizarFacturaEnFirestore(factura);
+    }
+
+    function obtenerHistorialLocal() {
+        return JSON.parse(localStorage.getItem('facturas_historial')) || [];
+    }
+
+    function obtenerItemFacturaActualDesdeHistorial() {
+        const historial = obtenerHistorialLocal();
+
+        if (!facturaActualId) {
+            return null;
+        }
+
+        return historial.find(item => item.id === facturaActualId) || null;
+    }
+
+    function configurarNavegacionLote() {
+        const modoDashboard = localStorage.getItem('dashboard_modo');
+        const navegacionBox = document.getElementById('navegacionLoteBox');
+        const indicador = document.getElementById('indicadorFacturaLote');
+        const nombreArchivoLote = document.getElementById('nombreArchivoLote');
+        const btnAnterior = document.getElementById('btnFacturaAnterior');
+        const btnSiguiente = document.getElementById('btnFacturaSiguiente');
+
+        let ids = [];
+
+        try {
+            ids = JSON.parse(localStorage.getItem('dashboard_facturas_ids')) || [];
+        } catch (error) {
+            ids = [];
+        }
+
+        if (modoDashboard !== 'lote' || ids.length <= 1 || !facturaActualId || !ids.includes(facturaActualId)) {
+            navegacionBox.classList.add('hidden');
+            return;
+        }
+
+        facturasLoteIds = ids;
+        indiceFacturaLote = ids.indexOf(facturaActualId);
+
+        if (indiceFacturaLote < 0) {
+            indiceFacturaLote = Number(localStorage.getItem('dashboard_factura_indice') || 0);
+        }
+
+        if (indiceFacturaLote < 0 || indiceFacturaLote >= facturasLoteIds.length) {
+            indiceFacturaLote = 0;
+        }
+
+        localStorage.setItem('dashboard_factura_indice', String(indiceFacturaLote));
+
+        const itemActual = obtenerItemFacturaActualDesdeHistorial();
+
+        navegacionBox.classList.remove('hidden');
+
+        indicador.innerText = `Factura ${indiceFacturaLote + 1} de ${facturasLoteIds.length}`;
+
+        nombreArchivoLote.innerText = itemActual && itemActual.nombreArchivo
+            ? `Archivo: ${itemActual.nombreArchivo}`
+            : 'Archivo no disponible';
+
+        btnAnterior.disabled = indiceFacturaLote === 0;
+        btnSiguiente.disabled = indiceFacturaLote === facturasLoteIds.length - 1;
+    }
+
+    function cambiarFacturaLote(direccion) {
+        let ids = [];
+
+        try {
+            ids = JSON.parse(localStorage.getItem('dashboard_facturas_ids')) || [];
+        } catch (error) {
+            ids = [];
+        }
+
+        if (ids.length === 0) {
+            alert('No hay facturas del lote para navegar.');
+            return;
+        }
+
+        let indiceActual = Number(localStorage.getItem('dashboard_factura_indice') || 0);
+        let nuevoIndice = indiceActual + direccion;
+
+        if (nuevoIndice < 0 || nuevoIndice >= ids.length) {
+            return;
+        }
+
+        const nuevoId = ids[nuevoIndice];
+        const historial = obtenerHistorialLocal();
+        const item = historial.find(factura => factura.id === nuevoId);
+
+        if (!item) {
+            alert('No se encontró esta factura en el respaldo local. Puedes verla desde el historial.');
+            return;
+        }
+
+        localStorage.setItem('dashboard_factura_indice', String(nuevoIndice));
+        localStorage.setItem('factura_actual_id', item.id);
+        localStorage.setItem('factura_actual', JSON.stringify(item.factura));
+        localStorage.removeItem('factura_actual_imagen');
+
+        cargarFacturaDesdeLocalStorage();
+
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+
+    function exportarExcel() {
+        const factura = JSON.parse(localStorage.getItem('factura_actual'));
+
+        if (!factura) {
+            return alert('No hay datos para exportar.');
+        }
+
+        const filas = [];
+
+        const anomaliasTexto = factura.anomalias && factura.anomalias.length > 0
+            ? factura.anomalias.map(a => `${a.tipo || 'Anomalía'}: ${a.descripcion || ''}`).join(' | ')
+            : '';
+
+        if (factura.items && factura.items.length) {
+            factura.items.forEach(item => {
+                filas.push({
+                    Comercio: factura.comercio || '',
+                    NIT: factura.nit_emisor || '',
+                    Fecha: factura.fecha || '',
+                    Descripcion: item.descripcion || '',
+                    Monto: Number(item.monto || 0),
+                    Subtotal: Number(factura.subtotal || 0),
+                    IVA: Number(factura.iva || 0),
+                    Total: Number(factura.total || 0),
+                    Tipo: factura.es_exenta ? 'Exenta' : 'Gravada',
+                    Tiene_Anomalias: factura.tiene_anomalias ? 'Sí' : 'No',
+                    Anomalias: anomaliasTexto
+                });
+            });
+        } else {
+            filas.push({
+                Comercio: factura.comercio || '',
+                NIT: factura.nit_emisor || '',
+                Fecha: factura.fecha || '',
+                Descripcion: '',
+                Monto: 0,
+                Subtotal: Number(factura.subtotal || 0),
+                IVA: Number(factura.iva || 0),
+                Total: Number(factura.total || 0),
+                Tipo: factura.es_exenta ? 'Exenta' : 'Gravada',
+                Tiene_Anomalias: factura.tiene_anomalias ? 'Sí' : 'No',
+                Anomalias: anomaliasTexto
+            });
+        }
+
+        const ws = XLSX.utils.json_to_sheet(filas);
+        const wb = XLSX.utils.book_new();
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Facturas');
+        XLSX.writeFile(wb, 'Datos_Factura.xlsx');
+    }
+
+    window.abrirImagenGrande = abrirImagenGrande;
+    window.cerrarImagenGrande = cerrarImagenGrande;
+    window.recalcularTotalesManual = recalcularTotalesManual;
+    window.exportarExcel = exportarExcel;
+    window.cambiarFacturaLote = cambiarFacturaLote;
+</script>
+
+</body>
+</html>

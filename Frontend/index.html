@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReceiptIA - Bienvenido</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+body{font-family:'Inter',sans-serif;}
+.glass{background:rgba(15,23,42,.88);backdrop-filter:blur(10px);}
+</style>
+</head>
+
+<body class="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6">
+<div class="absolute inset-0 bg-gradient-to-br from-indigo-700 via-slate-950 to-cyan-700 opacity-90"></div>
+
+<div class="relative w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
+<div>
+    <span class="bg-indigo-500/20 text-indigo-200 px-4 py-2 rounded-full text-sm font-semibold">ReceiptIA</span>
+    <h1 class="text-5xl font-extrabold mt-6 leading-tight">Extrae datos de facturas y recibos con IA</h1>
+    <p class="text-slate-300 mt-6 text-lg">
+        Analiza comprobantes, organiza información automáticamente y exporta los datos en Excel de forma rápida y profesional.
+    </p>
+</div>
+
+<div class="glass border border-slate-700 rounded-3xl p-8 shadow-2xl">
+    <div class="flex gap-3 mb-8">
+        <button id="loginTab" class="flex-1 bg-indigo-600 py-3 rounded-2xl font-bold">Iniciar sesión</button>
+        <button id="registerTab" class="flex-1 bg-slate-800 py-3 rounded-2xl font-bold">Crear cuenta</button>
+    </div>
+
+    <form id="loginForm" class="space-y-5">
+        <div>
+            <label class="text-sm text-slate-300">Correo electrónico</label>
+            <input type="email" id="loginEmail" required class="w-full mt-2 bg-slate-900 border border-slate-700 rounded-2xl px-4 py-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+
+        <div>
+            <label class="text-sm text-slate-300">Contraseña</label>
+            <input type="password" id="loginPassword" required class="w-full mt-2 bg-slate-900 border border-slate-700 rounded-2xl px-4 py-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+
+        <label class="flex items-center gap-2 text-sm text-slate-300">
+            <input type="checkbox" id="rememberUser" class="accent-indigo-500">
+            Recordar usuario
+        </label>
+
+        <button id="loginButton" class="w-full bg-indigo-600 hover:bg-indigo-700 transition py-4 rounded-2xl font-bold text-lg">
+            Entrar
+        </button>
+    </form>
+
+    <form id="registerForm" class="space-y-5 hidden">
+        <div>
+            <label class="text-sm text-slate-300">Usuario</label>
+            <input type="text" id="registerUser" required class="w-full mt-2 bg-slate-900 border border-slate-700 rounded-2xl px-4 py-4 text-white">
+        </div>
+
+        <div>
+            <label class="text-sm text-slate-300">Correo electrónico</label>
+            <input type="email" id="registerEmail" required class="w-full mt-2 bg-slate-900 border border-slate-700 rounded-2xl px-4 py-4 text-white">
+        </div>
+
+        <div>
+            <label class="text-sm text-slate-300">Contraseña</label>
+            <input type="password" id="registerPassword" required class="w-full mt-2 bg-slate-900 border border-slate-700 rounded-2xl px-4 py-4 text-white">
+        </div>
+
+        <button id="registerButton" class="w-full bg-emerald-600 hover:bg-emerald-700 transition py-4 rounded-2xl font-bold text-lg">
+            Crear cuenta
+        </button>
+    </form>
+
+    <div id="uploadSection" class="hidden mt-8 border-t border-slate-700 pt-8">
+        <div class="flex items-center justify-between mb-5">
+            <div>
+                <h2 class="text-2xl font-bold">Bienvenido <span id="currentUser"></span></h2>
+                <p id="currentUserRole" class="text-indigo-300 text-sm font-semibold mt-1"></p>
+                <p class="text-slate-400 text-sm">Sube una o varias facturas para iniciar el análisis por lote</p>
+            </div>
+
+            <button onclick="logout()" class="bg-red-500/20 text-red-300 px-4 py-2 rounded-xl">
+                Cerrar sesión
+            </button>
+        </div>
+
+        <div class="border-2 border-dashed border-slate-600 hover:border-indigo-400 transition rounded-3xl p-10 text-center relative bg-slate-900/50">
+            <input type="file" id="fileInput" accept="image/*" multiple class="absolute inset-0 opacity-0 cursor-pointer">
+            <p id="statusText" class="text-slate-300 font-medium">
+                Arrastra imágenes o haz clic aquí. Máximo 500 facturas.
+            </p>
+        </div>
+
+        <div id="previewBox" class="hidden mt-5 bg-slate-900/60 border border-slate-700 rounded-3xl p-4">
+            <div class="flex justify-between items-center mb-3">
+                <p class="text-slate-400 text-sm font-semibold">
+                    Vista previa de imágenes seleccionadas
+                </p>
+
+                <span id="previewCounter" class="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded font-bold">
+                    1 / 1
+                </span>
+            </div>
+
+            <div class="relative w-full bg-white rounded-2xl overflow-hidden">
+                <div class="absolute left-0 top-0 h-full w-16 bg-black/40 z-10 flex items-center justify-center">
+                    <button 
+                        type="button"
+                        onclick="moverPreview(-1)" 
+                        class="bg-black/50 hover:bg-black/80 text-white w-10 h-10 rounded-full text-2xl font-bold flex items-center justify-center"
+                    >
+                        ‹
+                    </button>
+                </div>
+
+                <img 
+                    id="previewImage" 
+                    src="" 
+                    alt="Vista previa de la factura" 
+                    class="w-full max-h-72 object-contain bg-white cursor-zoom-in hover:opacity-90 transition"
+                    onclick="abrirImagenGrande()"
+                >
+
+                <div class="absolute right-0 top-0 h-full w-16 bg-black/40 z-10 flex items-center justify-center">
+                    <button 
+                        type="button"
+                        onclick="moverPreview(1)" 
+                        class="bg-black/50 hover:bg-black/80 text-white w-10 h-10 rounded-full text-2xl font-bold flex items-center justify-center"
+                    >
+                        ›
+                    </button>
+                </div>
+            </div>
+
+            <p id="previewFileName" class="text-center text-slate-400 text-xs mt-3 truncate">
+                Imagen seleccionada
+            </p>
+
+            <p class="text-center text-slate-500 text-xs mt-1">
+                Usa las flechas para ver las demás facturas. Haz clic en la imagen para ampliarla.
+            </p>
+        </div>
+
+        <div id="progressBox" class="hidden mt-5 bg-slate-900/60 border border-slate-700 rounded-3xl p-4">
+            <div class="flex justify-between mb-2">
+                <span id="progressText" class="text-sm text-slate-300 font-semibold">Procesando...</span>
+                <span id="progressPercent" class="text-sm text-indigo-300 font-bold">0%</span>
+            </div>
+
+            <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
+                <div id="progressBar" class="bg-indigo-500 h-3 rounded-full transition-all duration-300" style="width: 0%;"></div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3 mt-4 text-center text-sm">
+                <div class="bg-slate-800 rounded-2xl p-3">
+                    <p class="text-slate-400">Procesadas</p>
+                    <p id="procesadasCount" class="font-bold text-emerald-400">0</p>
+                </div>
+                <div class="bg-slate-800 rounded-2xl p-3">
+                    <p class="text-slate-400">Errores</p>
+                    <p id="erroresCount" class="font-bold text-red-400">0</p>
+                </div>
+                <div class="bg-slate-800 rounded-2xl p-3">
+                    <p class="text-slate-400">Total</p>
+                    <p id="totalCount" class="font-bold text-indigo-400">0</p>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" id="uploadBtn" class="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 py-4 rounded-2xl font-bold text-lg transition">
+            Iniciar Auditoría con IA
+        </button>
+
+        <a href="Dashboard.html" class="block text-center w-full mt-4 bg-slate-800 hover:bg-slate-700 py-4 rounded-2xl font-bold text-lg transition">
+            Ir al Menú
+        </a>
+    </div>
+</div>
+</div>
+
+<!-- MODAL PARA VER IMAGEN GRANDE -->
+<div id="imagenModal" class="hidden fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center p-6">
+    <button 
+        onclick="cerrarImagenGrande()" 
+        class="absolute top-6 right-8 text-white text-4xl font-bold hover:text-red-400 transition"
+    >
+        &times;
+    </button>
+
+    <div class="max-w-7xl w-full max-h-[90vh] flex items-center justify-center">
+        <img 
+            id="imagenGrande" 
+            src="" 
+            alt="Imagen ampliada" 
+            class="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl bg-white"
+        >
+    </div>
+
+    <p class="absolute bottom-5 left-0 right-0 text-center text-white/70 text-sm">
+        Presiona ESC o haz clic fuera de la imagen para cerrar
+    </p>
+</div>
+
+<script type="module">
+import { auth, db } from "./firebase-config.js";
+
+import {
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged,
+    updateProfile,
+    setPersistence,
+    browserLocalPersistence,
+    browserSessionPersistence
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
+import {
+    doc,
+    setDoc,
+    getDoc,
+    serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+const TAMANO_LOTE = 10;
+
+const loginTab = document.getElementById('loginTab');
+const registerTab = document.getElementById('registerTab');
+const loginForm = document.getElementById('loginForm');
+const registerForm = document.getElementById('registerForm');
+const uploadSection = document.getElementById('uploadSection');
+const fileInput = document.getElementById('fileInput');
+const statusText = document.getElementById('statusText');
+const uploadBtn = document.getElementById('uploadBtn');
+const previewBox = document.getElementById('previewBox');
+const previewImage = document.getElementById('previewImage');
+const previewCounter = document.getElementById('previewCounter');
+const previewFileName = document.getElementById('previewFileName');
+const progressBox = document.getElementById('progressBox');
+const progressText = document.getElementById('progressText');
+const progressPercent = document.getElementById('progressPercent');
+const progressBar = document.getElementById('progressBar');
+const procesadasCount = document.getElementById('procesadasCount');
+const erroresCount = document.getElementById('erroresCount');
+const totalCount = document.getElementById('totalCount');
+
+const loginEmailInput = document.getElementById('loginEmail');
+const loginPasswordInput = document.getElementById('loginPassword');
+const rememberUserInput = document.getElementById('rememberUser');
+const registerUserInput = document.getElementById('registerUser');
+const registerEmailInput = document.getElementById('registerEmail');
+const registerPasswordInput = document.getElementById('registerPassword');
+const loginButton = document.getElementById('loginButton');
+const registerButton = document.getElementById('registerButton');
+
+let selectedFiles = [];
+let selectedPreviewUrls = [];
+let previewIndex = 0;
+let currentUserData = null;
+
+function switchTab(type){
+    const isLogin = type === 'login';
+
+    loginForm.classList.toggle('hidden', !isLogin);
+    registerForm.classList.toggle('hidden', isLogin);
+
+    loginTab.className = `flex-1 py-3 rounded-2xl font-bold ${isLogin ? 'bg-indigo-600' : 'bg-slate-800'}`;
+    registerTab.className = `flex-1 py-3 rounded-2xl font-bold ${!isLogin ? 'bg-emerald-600' : 'bg-slate-800'}`;
+}
+
+loginTab.onclick = () => switchTab('login');
+registerTab.onclick = () => switchTab('register');
+
+function guardarUsuarioLocal(userData){
+    localStorage.setItem('receiptia_user', JSON.stringify(userData));
+    localStorage.setItem('rememberedUser', JSON.stringify(userData));
+}
+
+function limpiarUsuarioLocal(){
+    localStorage.removeItem('receiptia_user');
+    localStorage.removeItem('rememberedUser');
+}
+
+async function obtenerDatosUsuarioFirebase(user){
+    const datosBase = {
+        uid: user.uid,
+        username: user.displayName || user.email?.split('@')[0] || 'Usuario',
+        email: user.email,
+        rol: 'auditor'
+    };
+
+    try{
+        const referenciaUsuario = doc(db, 'usuarios', user.uid);
+        const documentoUsuario = await getDoc(referenciaUsuario);
+
+        if(documentoUsuario.exists()){
+            const datosFirestore = documentoUsuario.data();
+
+            return {
+                uid: user.uid,
+                username: datosFirestore.username || datosBase.username,
+                email: datosFirestore.email || datosBase.email,
+                rol: datosFirestore.rol || 'auditor'
+            };
+        }
+
+        return datosBase;
+
+    }catch(error){
+        console.error('No se pudo leer el rol del usuario:', error);
+        return datosBase;
+    }
+}
+
+function showUploader(user){
+    currentUserData = user;
+
+    uploadSection.classList.remove('hidden');
+    document.getElementById('currentUser').innerText = user.username || user.email || 'Usuario';
+
+    const roleText = user.rol === 'admin'
+        ? 'Rol: Administrador'
+        : 'Rol: Auditor';
+
+    document.getElementById('currentUserRole').innerText = roleText;
+
+    loginForm.classList.add('hidden');
+    registerForm.classList.add('hidden');
+    loginTab.parentElement.classList.add('hidden');
+}
+
+function showAuthForms(){
+    currentUserData = null;
+
+    uploadSection.classList.add('hidden');
+    loginForm.classList.remove('hidden');
+    registerForm.classList.add('hidden');
+    loginTab.parentElement.classList.remove('hidden');
+
+    switchTab('login');
+}
+
+function obtenerMensajeErrorFirebase(error){
+    const codigo = error.code || '';
+
+    if(codigo.includes('auth/email-already-in-use')){
+        return 'Ese correo ya está registrado. Intenta iniciar sesión.';
+    }
+
+    if(codigo.includes('auth/invalid-email')){
+        return 'El correo electrónico no es válido.';
+    }
+
+    if(codigo.includes('auth/weak-password')){
+        return 'La contraseña es muy débil. Usa al menos 6 caracteres.';
+    }
+
+    if(codigo.includes('auth/user-not-found')){
+        return 'No existe una cuenta con ese correo.';
+    }
+
+    if(codigo.includes('auth/wrong-password') || codigo.includes('auth/invalid-credential')){
+        return 'Correo o contraseña incorrectos.';
+    }
+
+    if(codigo.includes('auth/network-request-failed')){
+        return 'Hay un problema de conexión a internet.';
+    }
+
+    if(codigo.includes('permission-denied')){
+        return 'Firebase no permitió la operación. Revisa las reglas de Firestore.';
+    }
+
+    return 'Ocurrió un error con Firebase: ' + error.message;
+}
+
+registerForm.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+
+    const username = registerUserInput.value.trim();
+    const email = registerEmailInput.value.trim();
+    const password = registerPasswordInput.value;
+
+    if(!username){
+        alert('Escribe un nombre de usuario.');
+        return;
+    }
+
+    if(!email){
+        alert('Escribe un correo electrónico.');
+        return;
+    }
+
+    if(password.length < 6){
+        alert('La contraseña debe tener al menos 6 caracteres.');
+        return;
+    }
+
+    registerButton.disabled = true;
+    registerButton.innerText = 'Creando cuenta...';
+
+    try{
+        await setPersistence(auth, browserLocalPersistence);
+
+        const credencial = await createUserWithEmailAndPassword(auth, email, password);
+
+        await updateProfile(credencial.user, {
+            displayName: username
+        });
+
+        const datosUsuario = {
+            uid: credencial.user.uid,
+            username: username,
+            email: email,
+            rol: 'auditor'
+        };
+
+        try{
+            await setDoc(doc(db, 'usuarios', credencial.user.uid), {
+                uid: credencial.user.uid,
+                username: username,
+                email: email,
+                rol: 'auditor',
+                fechaRegistro: serverTimestamp()
+            });
+        }catch(errorFirestore){
+            console.error('La cuenta se creó, pero no se pudo guardar el perfil en Firestore:', errorFirestore);
+            alert('La cuenta se creó, pero no se pudo guardar el rol en Firestore. Revisa las reglas.');
+        }
+
+        guardarUsuarioLocal(datosUsuario);
+
+        alert('Cuenta creada correctamente. El usuario fue registrado como auditor.');
+
+        showUploader(datosUsuario);
+
+    }catch(error){
+        console.error(error);
+        alert(obtenerMensajeErrorFirebase(error));
+
+    }finally{
+        registerButton.disabled = false;
+        registerButton.innerText = 'Crear cuenta';
+    }
+});
+
+loginForm.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+
+    const email = loginEmailInput.value.trim();
+    const password = loginPasswordInput.value;
+
+    if(!email || !password){
+        alert('Escribe tu correo y contraseña.');
+        return;
+    }
+
+    loginButton.disabled = true;
+    loginButton.innerText = 'Entrando...';
+
+    try{
+        const persistencia = rememberUserInput.checked
+            ? browserLocalPersistence
+            : browserSessionPersistence;
+
+        await setPersistence(auth, persistencia);
+
+        const credencial = await signInWithEmailAndPassword(auth, email, password);
+
+        const datosUsuario = await obtenerDatosUsuarioFirebase(credencial.user);
+
+        guardarUsuarioLocal(datosUsuario);
+
+        showUploader(datosUsuario);
+
+    }catch(error){
+        console.error(error);
+        alert(obtenerMensajeErrorFirebase(error));
+
+    }finally{
+        loginButton.disabled = false;
+        loginButton.innerText = 'Entrar';
+    }
+});
+
+async function logout(){
+    try{
+        await signOut(auth);
+    }catch(error){
+        console.error(error);
+    }
+
+    limpiarUsuarioLocal();
+    location.reload();
+}
+
+onAuthStateChanged(auth, async (user) => {
+    if(user){
+        const datosUsuario = await obtenerDatosUsuarioFirebase(user);
+
+        guardarUsuarioLocal(datosUsuario);
+        showUploader(datosUsuario);
+    }else{
+        limpiarUsuarioLocal();
+        showAuthForms();
+    }
+});
+
+fileInput.onchange = (e)=>{
+    const files = Array.from(e.target.files);
+
+    if(files.length === 0){
+        return;
+    }
+
+    if(files.length > 500){
+        alert('Solo puedes subir un máximo de 500 imágenes a la vez.');
+        fileInput.value = '';
+        limpiarSeleccion();
+        return;
+    }
+
+    limpiarUrlsTemporales();
+
+    selectedFiles = files;
+    selectedPreviewUrls = selectedFiles.map(file => URL.createObjectURL(file));
+    previewIndex = 0;
+
+    const totalLotes = Math.ceil(selectedFiles.length / TAMANO_LOTE);
+
+    statusText.innerHTML = `
+        <span class="text-emerald-400 font-bold">
+            ${selectedFiles.length} imagen(es) seleccionada(s)
+        </span>
+        <br>
+        <span class="text-slate-400 text-sm">
+            Se procesarán en ${totalLotes} lote(s) de máximo ${TAMANO_LOTE} imágenes.
+        </span>
+    `;
+
+    actualizarPreview(0);
+    previewBox.classList.remove('hidden');
+};
+
+function limpiarSeleccion(){
+    selectedFiles = [];
+    selectedPreviewUrls = [];
+    previewIndex = 0;
+    previewBox.classList.add('hidden');
+    statusText.innerHTML = 'Arrastra imágenes o haz clic aquí. Máximo 500 facturas.';
+}
+
+function limpiarUrlsTemporales(){
+    selectedPreviewUrls.forEach(url => URL.revokeObjectURL(url));
+    selectedPreviewUrls = [];
+}
+
+function actualizarPreview(index){
+    if(selectedPreviewUrls.length === 0){
+        return;
+    }
+
+    if(index < 0){
+        previewIndex = selectedPreviewUrls.length - 1;
+    }else if(index >= selectedPreviewUrls.length){
+        previewIndex = 0;
+    }else{
+        previewIndex = index;
+    }
+
+    previewImage.src = selectedPreviewUrls[previewIndex];
+    previewCounter.innerText = `${previewIndex + 1} / ${selectedPreviewUrls.length}`;
+
+    if(selectedFiles[previewIndex]){
+        previewFileName.innerText = selectedFiles[previewIndex].name;
+    }
+}
+
+function moverPreview(direccion){
+    actualizarPreview(previewIndex + direccion);
+}
+
+function abrirImagenGrande() {
+    if(selectedPreviewUrls.length === 0){
+        return;
+    }
+
+    const imagenActual = selectedPreviewUrls[previewIndex];
+
+    if (!imagenActual) {
+        return;
+    }
+
+    document.getElementById('imagenGrande').src = imagenActual;
+    document.getElementById('imagenModal').classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+}
+
+function cerrarImagenGrande() {
+    document.getElementById('imagenModal').classList.add('hidden');
+    document.getElementById('imagenGrande').src = '';
+    document.body.classList.remove('overflow-hidden');
+}
+
+document.getElementById('imagenModal').addEventListener('click', function(e) {
+    if (e.target.id === 'imagenModal') {
+        cerrarImagenGrande();
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        cerrarImagenGrande();
+    }
+});
+
+function actualizarProgreso(actual, total, procesadas, errores){
+    const porcentaje = total > 0 ? Math.round((actual / total) * 100) : 0;
+
+    progressBox.classList.remove('hidden');
+    progressText.innerText = `Procesando ${actual} de ${total}`;
+    progressPercent.innerText = `${porcentaje}%`;
+    progressBar.style.width = `${porcentaje}%`;
+
+    procesadasCount.innerText = procesadas;
+    erroresCount.innerText = errores;
+    totalCount.innerText = total;
+}
+
+async function fetchConTiempoLimite(url, opciones, tiempoMaximo = 180000){
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), tiempoMaximo);
+
+    try{
+        const response = await fetch(url, {
+            ...opciones,
+            signal: controller.signal
+        });
+
+        clearTimeout(timeout);
+        return response;
+
+    }catch(error){
+        clearTimeout(timeout);
+
+        if(error.name === 'AbortError'){
+            throw new Error('El lote tardó demasiado en procesarse y fue omitido.');
+        }
+
+        throw error;
+    }
+}
+
+function guardarHistorialSeguro(historial){
+    try{
+        localStorage.setItem('facturas_historial', JSON.stringify(historial));
+        return true;
+    }catch(error){
+        console.error('Error guardando historial:', error);
+
+        alert(
+            'El historial llegó al límite de almacenamiento del navegador. ' +
+            'Se guardaron los datos posibles, pero no se guardan imágenes para evitar este error.'
+        );
+
+        return false;
+    }
+}
+
+function limpiarUndefined(objeto){
+    if(Array.isArray(objeto)){
+        return objeto.map(item => limpiarUndefined(item));
+    }
+
+    if(objeto !== null && typeof objeto === 'object'){
+        const objetoLimpio = {};
+
+        Object.keys(objeto).forEach(clave => {
+            if(objeto[clave] !== undefined){
+                objetoLimpio[clave] = limpiarUndefined(objeto[clave]);
+            }
+        });
+
+        return objetoLimpio;
+    }
+
+    return objeto;
+}
+
+async function guardarFacturaEnFirestore(facturaHistorial){
+    if(!auth.currentUser){
+        console.warn('No hay usuario autenticado. No se guardó en Firestore.');
+        return false;
+    }
+
+    try{
+        const datosFirestore = limpiarUndefined({
+            ...facturaHistorial,
+            uidUsuario: auth.currentUser.uid
+        });
+
+        datosFirestore.fechaRegistroTimestamp = serverTimestamp();
+
+        await setDoc(doc(db, 'facturas', facturaHistorial.id), datosFirestore);
+
+        return true;
+
+    }catch(error){
+        console.error('Error guardando factura en Firestore:', error);
+
+        alert(
+            'La factura se guardó localmente, pero no se pudo guardar en Firebase. ' +
+            'Revisa tu conexión o las reglas de Firestore.'
+        );
+
+        return false;
+    }
+}
+
+function crearLotesDeArchivos(files, tamanoLote){
+    const lotes = [];
+
+    for(let i = 0; i < files.length; i += tamanoLote){
+        lotes.push(files.slice(i, i + tamanoLote));
+    }
+
+    return lotes;
+}
+
+function crearFacturaErrorDesdeLote(file, mensaje, indiceGlobal){
+    const facturaId = Date.now().toString() + '-error-' + indiceGlobal;
+
+    return {
+        id: facturaId,
+        uidUsuario: obtenerUsuarioActualUid(),
+        fechaRegistro: new Date().toLocaleString(),
+        usuario: obtenerUsuarioActualNombre(),
+        imagen: null,
+        nombreArchivo: file.name,
+        estado: 'Error de procesamiento',
+        carpetaId: null,
+        factura: {
+            comercio: null,
+            nit_emisor: null,
+            fecha: null,
+            items: [],
+            subtotal: 0.00,
+            iva: 0.00,
+            total: 0.00,
+            es_exenta: false,
+            tiene_anomalias: true,
+            anomalias: [
+                {
+                    tipo: 'Error de procesamiento',
+                    ubicacion: 'Carga por lote',
+                    descripcion: mensaje,
+                    valor_detectado: file.name,
+                    valor_esperado: 'Factura procesada correctamente'
+                }
+            ],
+            metodo: 'Tesseract OCR + Gemini texto en lote',
+            texto_ocr: ''
+        }
+    };
+}
+
+function obtenerUsuarioActualNombre(){
+    if(currentUserData && currentUserData.username){
+        return currentUserData.username;
+    }
+
+    const currentUser = JSON.parse(localStorage.getItem('rememberedUser')) || 
+                        JSON.parse(localStorage.getItem('receiptia_user'));
+
+    return currentUser ? currentUser.username : 'Usuario desconocido';
+}
+
+function obtenerUsuarioActualUid(){
+    if(currentUserData && currentUserData.uid){
+        return currentUserData.uid;
+    }
+
+    const currentUser = JSON.parse(localStorage.getItem('rememberedUser')) || 
+                        JSON.parse(localStorage.getItem('receiptia_user'));
+
+    return currentUser ? currentUser.uid : null;
+}
+
+uploadBtn.onclick = async ()=>{
+    if(selectedFiles.length === 0) {
+        return alert('Selecciona una o varias imágenes.');
+    }
+
+    if(selectedFiles.length > 500){
+        return alert('Solo puedes procesar un máximo de 500 imágenes a la vez.');
+    }
+
+    if(!auth.currentUser){
+        return alert('Debes iniciar sesión antes de procesar facturas.');
+    }
+
+    uploadBtn.disabled = true;
+
+    let historial = JSON.parse(localStorage.getItem('facturas_historial')) || [];
+
+    let procesadas = 0;
+    let errores = 0;
+
+    /*
+        Esta lista guarda únicamente los ID de las facturas procesadas
+        en esta carga por lote. Dashboard usará esta lista para navegar:
+        Factura 1 de 10, Factura 2 de 10, etc.
+    */
+    let facturasDelLoteDashboard = [];
+
+    const lotes = crearLotesDeArchivos(selectedFiles, TAMANO_LOTE);
+    const totalFacturas = selectedFiles.length;
+
+    actualizarProgreso(0, totalFacturas, procesadas, errores);
+
+    let indiceGlobal = 0;
+
+    for(let loteIndex = 0; loteIndex < lotes.length; loteIndex++){
+        const lote = lotes[loteIndex];
+
+        console.log('====================================');
+        console.log(`Enviando lote ${loteIndex + 1} de ${lotes.length}`);
+        console.log(`Cantidad de archivos en lote: ${lote.length}`);
+
+        uploadBtn.innerText = `Procesando lote ${loteIndex + 1} de ${lotes.length}...`;
+
+        try{
+            const formData = new FormData();
+
+            lote.forEach(file => {
+                formData.append('files', file);
+            });
+
+            const response = await fetchConTiempoLimite('http://127.0.0.1:8000/procesar-lote',{
+                method:'POST',
+                body:formData
+            }, 180000);
+
+            const data = await response.json();
+
+            console.log(`Respuesta recibida para lote ${loteIndex + 1}:`, data);
+
+            if(data.error){
+                throw new Error(data.error);
+            }
+
+            const facturas = Array.isArray(data.facturas) ? data.facturas : [];
+
+            if(facturas.length === 0){
+                throw new Error('El backend no devolvió facturas para este lote.');
+            }
+
+            for(let j = 0; j < facturas.length; j++){
+                const factura = facturas[j];
+
+                const nombreArchivo = factura.nombre_archivo || 
+                                      factura.nombreArchivo || 
+                                      lote[j]?.name || 
+                                      `Factura lote ${loteIndex + 1}`;
+
+                const facturaId = Date.now().toString() + '-' + loteIndex + '-' + j;
+
+                const facturaHistorial = {
+                    id: facturaId,
+                    uidUsuario: obtenerUsuarioActualUid(),
+                    fechaRegistro: new Date().toLocaleString(),
+                    usuario: obtenerUsuarioActualNombre(),
+                    imagen: null,
+                    nombreArchivo: nombreArchivo,
+                    estado: factura.tiene_anomalias ? 'Por revisar' : 'Procesada',
+                    carpetaId: null,
+                    factura: factura
+                };
+
+                historial.push(facturaHistorial);
+
+                /*
+                    Guardamos el ID para que Dashboard pueda mostrar
+                    esta factura como parte del lote recién subido.
+                */
+                facturasDelLoteDashboard.push(facturaHistorial.id);
+
+                await guardarFacturaEnFirestore(facturaHistorial);
+
+                if(factura.tiene_anomalias && factura.anomalias && factura.anomalias.length > 0){
+                    const esErrorOCR = factura.anomalias.some(a => 
+                        String(a.tipo || '').toLowerCase().includes('error') ||
+                        String(a.tipo || '').toLowerCase().includes('texto no detectado')
+                    );
+
+                    if(esErrorOCR){
+                        errores++;
+                    }else{
+                        procesadas++;
+                    }
+                }else{
+                    procesadas++;
+                }
+
+                indiceGlobal++;
+                actualizarProgreso(indiceGlobal, totalFacturas, procesadas, errores);
+            }
+
+        }catch(error){
+            console.error(`Error procesando lote ${loteIndex + 1}:`, error);
+
+            for(let j = 0; j < lote.length; j++){
+                const file = lote[j];
+                const facturaError = crearFacturaErrorDesdeLote(file, error.message, indiceGlobal);
+
+                historial.push(facturaError);
+
+                /*
+                    También incluimos las facturas con error para que puedan
+                    revisarse desde Dashboard dentro del mismo lote.
+                */
+                facturasDelLoteDashboard.push(facturaError.id);
+
+                await guardarFacturaEnFirestore(facturaError);
+
+                errores++;
+                indiceGlobal++;
+
+                actualizarProgreso(indiceGlobal, totalFacturas, procesadas, errores);
+            }
+        }
+
+        guardarHistorialSeguro(historial);
+    }
+
+    /*
+        Después de procesar el lote, preparamos Dashboard para abrir
+        la primera factura del lote y permitir navegación con flechas.
+    */
+    if(facturasDelLoteDashboard.length > 0){
+        const primerId = facturasDelLoteDashboard[0];
+        const primeraFacturaHistorial = historial.find(item => item.id === primerId);
+
+        if(primeraFacturaHistorial){
+            localStorage.setItem('dashboard_modo', 'lote');
+            localStorage.setItem('dashboard_facturas_ids', JSON.stringify(facturasDelLoteDashboard));
+            localStorage.setItem('dashboard_factura_indice', '0');
+
+            localStorage.setItem('factura_actual', JSON.stringify(primeraFacturaHistorial.factura));
+            localStorage.setItem('factura_actual_id', primeraFacturaHistorial.id);
+            localStorage.removeItem('factura_actual_imagen');
+        }
+    }else{
+        localStorage.setItem('dashboard_modo', 'individual');
+        localStorage.removeItem('dashboard_facturas_ids');
+        localStorage.removeItem('dashboard_factura_indice');
+    }
+
+    uploadBtn.disabled = false;
+    uploadBtn.innerText = 'Iniciar Auditoría con IA';
+
+    alert(`Proceso finalizado.\nFacturas procesadas: ${procesadas}\nErrores: ${errores}`);
+
+    limpiarUrlsTemporales();
+
+    /*
+        Antes enviaba a Historial.html.
+        Ahora enviamos al Dashboard para revisar el lote factura por factura.
+    */
+    window.location.href = 'Dashboard.html';
+};
+
+window.logout = logout;
+window.moverPreview = moverPreview;
+window.abrirImagenGrande = abrirImagenGrande;
+window.cerrarImagenGrande = cerrarImagenGrande;
+</script>
+
+</body>
+</html>
