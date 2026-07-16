@@ -79,7 +79,7 @@ La inteligencia artificial participa después de extraer el texto de la factura.
 
 ---
 
-## 6. Estado Actual del Proyecto
+## 6. Estado Actual del Proyecto *ACTUALIZADO
 
 ### Funcionalidades que ya funcionan
 
@@ -95,6 +95,10 @@ La inteligencia artificial participa después de extraer el texto de la factura.
 - Exportación de datos a Excel.
 - Autenticación de usuarios con Firebase.
 - Roles básicos de administrador y auditor.
+- *API REST estructurada con FastAPI.*
+- *Contratos estrictos de entrada y salida utilizando Pydantic para validación de datos.*
+- *Endpoints de monitoreo y procesamiento completamente documentados.*
+
 
 ### Funcionalidades incompletas o pendientes
 
@@ -148,7 +152,7 @@ La arquitectura objetivo busca la separación entre interfaz, backend, inteligen
 
 ---
 
-## 9. Estructura del Repositorio
+## 9. Estructura del Repositorio *ACTUALIZADO
 
 ```text
 ReceiptIA/
@@ -166,6 +170,13 @@ ReceiptIA/
 |   └── ...
 |
 |-- docs/                # Documentacion tecnica y arquitecturas
+|   ├── api.md
+|   ├── evidencias API.pdf
+|   ├── arquitectura-actual.md
+|   ├── arquitectura-objetivo.md
+|   ├── diagnostico-semana-1.md
+|   ├── plan-mejora.md
+|   ├── riesgos-tecnicos.md
 |
 |-- Setup.bat            # Configuracion inicial del proyecto
 |-- ReceiptIA.bat        # Inicio automatico del sistema
@@ -288,15 +299,13 @@ La precisión del OCR depende de:
 -El procesamiento depende de servicios externos que pueden experimentar saturación temporal.
 -Actualmente no existen pruebas automatizadas ni una estrategia de despliegue en producción.
 
-## 15. Evidencias
+## 15. Evidencias *ACTUALIZADO
 
 | Evidencia            | Enlace o ubicacion           | Descripcion                                                     |
 | -------------------- | ---------------------------- | --------------------------------------------------------------- |
-| Capturas de pantalla |  |  |
-| Video de demo        |  |  |
+| Documentación API    | `docs/api.md`                | Contratos de entrada/salida y códigos HTTP de la API REST       |
+| Capturas de Prueba   | `docs/Evidencias_API.pdf`    | Pruebas de Swagger, manejo de errores y procesamiento por lotes |
 | Codigo fuente        | `Backend/main.py`            | Endpoint principal de procesamiento                             |
-| Endpoint probado     |  |  |
-| Diagramas            |  |  |
 
 
 
@@ -315,14 +324,30 @@ Google GenAI SDK: Cliente oficial para la integración con la API de Gemini.
 
 Antes de entregar, verifiquen:
 
-- [x] El problema está claramente descrito.
-- [x] Se explica quién usará o se beneficiará de la aplicación.
-- [x] Se identifica dónde está la IA.
-- [x] Se describen entradas y salidas.
-- [x] Se documenta el estado actual del proyecto.
-- [x] Se incluye arquitectura actual.
-- [x] Se incluye arquitectura objetivo.
-- [x] Se explica cómo ejecutar el proyecto.
-- [x] Se identifican riesgos técnicos.
-- [x] Se presenta plan de mejora por semana.
-- [x] No se incluyen claves, contraseñas ni tokens privados.
+- [x] La API se ejecuta localmente o se explica claramente como probarla.
+- [x] Existe endpoint de salud.
+- [x] Existe endpoint de metadatos.
+- [x] Existe endpoint inteligente principal.
+- [x] El contrato de entrada y salida esta documentado.
+- [x] Hay validacion basica.
+- [x] Hay manejo de errores.
+- [x] Hay evidencia de prueba exitosa.
+- [x] Hay evidencia de entrada invalida o error controlado.
+- [x] El README esta actualizado.
+- [x] No se publican claves, tokens ni datos sensibles
+
+## API REST
+
+La funcionalidad inteligente de ReceiptIA se encuentra expuesta mediante FastAPI.
+
+### Endpoints disponibles
+
+| Método | Endpoint | Descripción |
+|---------|----------|-------------|
+| GET | /health | Estado del servicio |
+| GET | /metadata | Información general de la API |
+| POST | /procesar | Procesa una factura individual |
+| POST | /procesar-lote | Procesa múltiples facturas |
+| POST | /leer-texto | Extrae únicamente el texto OCR |
+
+
