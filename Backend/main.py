@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from google import genai
 from google.genai import types
@@ -9,6 +9,7 @@ import os
 import shutil
 from pathlib import Path
 from dotenv import load_dotenv
+from pydantic import BaseModel
 
 from PIL import Image
 
@@ -16,6 +17,19 @@ import pytesseract
 import cv2
 import numpy as np
 
+class HealthResponse(BaseModel):
+    status: str
+    service: str
+    version: str
+
+
+class MetadataResponse(BaseModel):
+    nombre: str
+    descripcion: str
+    version: str
+    backend: str
+    ocr: str
+    modelo_ia: str
 
 app = FastAPI()
 
@@ -803,13 +817,56 @@ def extraer_texto_de_archivo(file_name, content):
 
 
 # ==============================
+# ENDPOINT DE SALUD
+# ==============================
+
+@app.get("/health", response_model=HealthResponse)
+def health():
+    return {
+        "status": "OK",
+        "service": "ReceiptIA",
+        "version": "1.0.0"
+    }
+
+
+# ==============================
+# METADATOS DE LA API
+# ==============================
+
+@app.get("/metadata", response_model=MetadataResponse)
+def metadata():
+    return {
+        "nombre": "ReceiptIA",
+        "descripcion": "Sistema inteligente para el análisis de facturas mediante OCR e IA.",
+        "version": "1.0.0",
+        "backend": "FastAPI",
+        "ocr": "Tesseract OCR",
+        "modelo_ia": "Gemini 2.5 Flash"
+    }
+
+# ==============================
 # RUTA PRINCIPAL INDIVIDUAL
 # TESSERACT OCR + GEMINI TEXTO
 # ==============================
 
 @app.post("/procesar")
 async def procesar(file: UploadFile = File(...)):
+
     try:
+
+        # ==============================
+        # VALIDAR EL ARCHIVO
+        # ==============================
+
+        if file.content_type not in [
+            "image/jpeg",
+            "image/png"
+        ]:
+            raise HTTPException(
+                status_code=400,
+                detail="Solo se permiten imágenes JPG o PNG."
+            )
+
         print("====================================")
         print(f"Archivo recibido: {file.filename}")
         print(f"Tipo de archivo: {file.content_type}")
@@ -845,9 +902,17 @@ async def procesar(file: UploadFile = File(...)):
 
         return resultado
 
+    except HTTPException:
+        raise
+
     except Exception as e:
+
         print(f"Error en el servidor: {e}")
-        return {"error": str(e)}
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
 
 
 # ==============================
@@ -878,6 +943,24 @@ async def procesar_lote(files: List[UploadFile] = File(...)):
 
             print("------------------------------------")
             print(f"Procesando OCR de {factura_id}: {nombre_archivo}")
+
+            # ==============================
+            # VALIDACIÓN DEL TIPO DE ARCHIVO
+            # ==============================
+
+            if file.content_type not in [
+                "image/jpeg",
+                "image/png"
+            ]:
+                facturas_invalidas.append(
+                    crear_respuesta_error_lote(
+                        factura_id,
+                        nombre_archivo,
+                        "",
+                        "Formato de imagen no permitido."
+                    )
+                )
+                continue
 
             try:
                 content = await file.read()
@@ -988,9 +1071,16 @@ TEXTO_OCR:
             "cantidad": len(facturas_finales)
         }
 
+    except HTTPException:
+        raise
+
     except Exception as e:
-        print(f"Error en procesamiento por lote: {e}")
-        return {"error": str(e)}
+        print(f"Error leyendo texto: {e}")
+
+    raise HTTPException(
+        status_code=500,
+        detail=str(e)
+    )
 
 
 # ==============================
@@ -1011,3 +1101,37 @@ async def leer_texto(file: UploadFile = File(...)):
     except Exception as e:
         print(f"Error leyendo texto: {e}")
         return {"error": str(e)}
+    
+# ==============================
+
+
+# ==============================
+
+@app.get("/health", response_model=HealthResponse)
+def health():
+
+    return {
+        "status": "OK",
+        "service": "ReceiptIA",
+        "version": "1.0.0"
+    }
+
+# ==============================
+@app.get("/metadata", response_model=MetadataResponse)
+def metadata():
+
+    return {
+
+        "nombre": "ReceiptIA",
+
+        "descripcion": "Sistema inteligente para analizar facturas mediante OCR e IA.",
+
+        "version": "1.0.0",
+
+        "backend": "FastAPI",
+
+        "ocr": "Tesseract OCR",
+
+        "modelo_ia": "Gemini 2.5 Flash"
+
+    }
