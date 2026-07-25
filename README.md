@@ -95,9 +95,16 @@ La inteligencia artificial participa después de extraer el texto de la factura.
 - Exportación de datos a Excel.
 - Autenticación de usuarios con Firebase.
 - Roles básicos de administrador y auditor.
+
+*semana 2*
 - *API REST estructurada con FastAPI.*
-- *Contratos estrictos de entrada y salida utilizando Pydantic para validación de datos.*
+- *Contratos estrictos de entrada y salida utilizando Pydantic para validacion de datos.*
 - *Endpoints de monitoreo y procesamiento completamente documentados.*
+
+*semana 3*
+- *Pruebas automatizadas implementadas con Pytest, cobertura de endpoints y logica interna*
+- *Analisis de codigo estatico integrado con Ruff*
+- *Pipeline de Integracion Continua configurado en GitHub Actions.*
 
 
 ### Funcionalidades incompletas o pendientes
@@ -108,6 +115,7 @@ La inteligencia artificial participa después de extraer el texto de la factura.
 - Documentar mejor la instalación en otra computadora.
 - Ajustar reglas de validación para reducir falsos positivos.
 - Fortalecer reglas de seguridad en Firebase.
+
 
 
 ---
@@ -157,10 +165,15 @@ La arquitectura objetivo busca la separación entre interfaz, backend, inteligen
 ```text
 ReceiptIA/
 |
+|-- .github/workflows/   # Pipeline de CI/CD 
+|
 |-- Backend/             # Logica del servidor FastAPI, OCR y conexion con Gemini
 |   ├── main.py
 |   ├── requirements.txt
 |   ├── .env.example
+|   ├── pyproject.toml
+|   ├── requirements-dev.txt
+|   ├── test/
 |   └── ...
 |
 |-- Frontend/            # Interfaz web, autenticacion y Dashboard
@@ -177,6 +190,8 @@ ReceiptIA/
 |   ├── diagnostico-semana-1.md
 |   ├── plan-mejora.md
 |   ├── riesgos-tecnicos.md
+|   ├── REGISTRO_ERRORES.md
+|   ├── Evidencias_Testing.pdf
 |
 |-- Setup.bat            # Configuracion inicial del proyecto
 |-- ReceiptIA.bat        # Inicio automatico del sistema
@@ -246,7 +261,40 @@ El proyecto utiliza un archivo .env ubicado en la carpeta Backend/.
 | GEMINI_FALLBACK_MODEL | Modelo alternativo en caso de saturación del principal | No |
 | TESSERACT_CMD | Ruta manual del ejecutable de Tesseract OCR | No |
 
-## 11. Datos Utilizados
+## 11. API REST
+
+La funcionalidad inteligente de ReceiptIA se encuentra expuesta mediante FastAPI.
+
+### Endpoints disponibles
+
+| Método | Endpoint | Descripción |
+|---------|----------|-------------|
+| GET | /health | Estado del servicio |
+| GET | /metadata | Información general de la API |
+| POST | /procesar | Procesa una factura individual |
+| POST | /procesar-lote | Procesa múltiples facturas |
+| POST | /leer-texto | Extrae únicamente el texto OCR |
+
+## 12. Pruebas Automatizadas y CI/CD 
+
+El proyecto cuenta con un conjunto de pruebas automatizadas y un pipeline de Integracion Continua mediante GitHub Actions.
+
+### Ejecución de pruebas locales
+Para ejecutar las pruebas se debe de estar dentro del entorno virtual y tener instaladas las dependencias de desarrollo.
+
+1. Instalar requerimientos de desarrollo:
+   ```bash
+   python -m pip install -r Backend/requirements-dev.txt
+
+2. analisis estatico con Ruff:
+cd Backend
+python -m ruff check .
+
+3. pruebas con Pytest:
+cd Backend
+python -m pytest -v
+
+## 13. Datos Utilizados
 
 | Fuente de datos | Tipo de datos | Uso dentro del proyecto | Observaciones |
 |---|---|---|---|
@@ -272,7 +320,7 @@ La precisión del OCR depende de:
 
 ---
 
-## 12. Riesgos Técnicos y Deuda Técnica
+## 14. Riesgos Técnicos y Deuda Técnica
 
 | Riesgo | Categoría | Probabilidad | Impacto | Mitigación propuesta |
 |---|---|---|---|---|
@@ -281,7 +329,7 @@ La precisión del OCR depende de:
 | Saturación o indisponibilidad temporal de Gemini | Servicios Externos | Media | Alto | Implementar reintentos automáticos y modelos alternativos |
 | Dependencia de conexión a Internet | Infraestructura | Media | Alto | Validaciones y manejo de errores |
 
-## 13. Plan de Mejora por Semana
+## 15. Plan de Mejora por Semana
 
 | Semana | Mejora esperada | Evidencia esperada |
 |---|---|---|
@@ -291,7 +339,7 @@ La precisión del OCR depende de:
 | Semana 5 | Implementación de logging, métricas y monitoreo | Logs, métricas y análisis de rendimiento |
 | Semana 6 | Revisión de seguridad, documentación y preparación de defensa | README final, presentación y demostración |
 
-## 14. Limitaciones Actuales
+## 16. Limitaciones Actuales
 
 -El sistema depende de una conexión a Internet para consumir la API de Gemini.
 -La precisión del OCR disminuye cuando las imágenes tienen baja calidad o están deterioradas.
@@ -299,17 +347,19 @@ La precisión del OCR depende de:
 -El procesamiento depende de servicios externos que pueden experimentar saturación temporal.
 -Actualmente no existen pruebas automatizadas ni una estrategia de despliegue en producción.
 
-## 15. Evidencias *ACTUALIZADO
+## 17. Evidencias *ACTUALIZADO
 
 | Evidencia            | Enlace o ubicacion           | Descripcion                                                     |
 | -------------------- | ---------------------------- | --------------------------------------------------------------- |
 | Documentación API    | `docs/api.md`                | Contratos de entrada/salida y códigos HTTP de la API REST       |
 | Capturas de Prueba   | `docs/Evidencias_API.pdf`    | Pruebas de Swagger, manejo de errores y procesamiento por lotes |
 | Codigo fuente        | `Backend/main.py`            | Endpoint principal de procesamiento                             |
+| Registro de errores  | `docs/REGISTRO_ERRORES.md`   | Documentacion de bloqueos, riesgos y soluciones implementadas   |
+| Evidencias Pruebas   | `docs/Evidencias_Testing.pdf`| Capturas de ejecución de pruebas locales y GitHub Actions       |
 
 
 
-## 16. Créditos y Referencias
+## 18. Créditos y Referencias
 
 FastAPI y Uvicorn: Framework utilizado para el desarrollo del Backend.
 Google Gemini 2.5 Flash: Modelo de inteligencia artificial utilizado para la extracción y clasificación de datos.
@@ -320,34 +370,22 @@ SheetJS: Librería utilizada para la exportación de información a Excel.
 Python Dotenv: Gestión segura de variables de entorno.
 Google GenAI SDK: Cliente oficial para la integración con la API de Gemini.
 
-## 17. Checklist de Revisión
+## 19. Checklist de Revisión
 
 Antes de entregar, verifiquen:
 
-- [x] La API se ejecuta localmente o se explica claramente como probarla.
-- [x] Existe endpoint de salud.
-- [x] Existe endpoint de metadatos.
-- [x] Existe endpoint inteligente principal.
-- [x] El contrato de entrada y salida esta documentado.
-- [x] Hay validacion basica.
-- [x] Hay manejo de errores.
-- [x] Hay evidencia de prueba exitosa.
-- [x] Hay evidencia de entrada invalida o error controlado.
-- [x] El README esta actualizado.
-- [x] No se publican claves, tokens ni datos sensibles
+- [x] Existe carpeta tests/.
+- [x] Hay al menos dos pruebas relevantes.
+- [x] Las pruebas fueron ejecutadas localmente.
+- [x] Existe pipeline CI/CD o intento documentado.
+- [x] El README incluye comandos de prueba.
+- [x] Existe .env.example o documentacion equivalente.
+- [x] No se publican claves, tokens ni datos sensibles.
+- [x] Hay evidencia de ejecucion.
+- [x] Se documentan errores corregidos o bloqueos.
+- [x] Si participaron en la actividad bonus, se adjunta o referencia la mini-presentacion. 
+- [x] Todo lo entregado corresponde al proyecto real del grupo
 
-## API REST
 
-La funcionalidad inteligente de ReceiptIA se encuentra expuesta mediante FastAPI.
-
-### Endpoints disponibles
-
-| Método | Endpoint | Descripción |
-|---------|----------|-------------|
-| GET | /health | Estado del servicio |
-| GET | /metadata | Información general de la API |
-| POST | /procesar | Procesa una factura individual |
-| POST | /procesar-lote | Procesa múltiples facturas |
-| POST | /leer-texto | Extrae únicamente el texto OCR |
 
 
