@@ -9,27 +9,12 @@ import os
 import shutil
 from pathlib import Path
 from dotenv import load_dotenv
-from pydantic import BaseModel
 
 from PIL import Image
 
 import pytesseract
 import cv2
 import numpy as np
-
-class HealthResponse(BaseModel):
-    status: str
-    service: str
-    version: str
-
-
-class MetadataResponse(BaseModel):
-    nombre: str
-    descripcion: str
-    version: str
-    backend: str
-    ocr: str
-    modelo_ia: str
 
 app = FastAPI(
     title="ReceiptIA API",
@@ -859,31 +844,19 @@ def extraer_texto_de_archivo(file_name, content):
 
 
 # ==============================
-# ENDPOINT DE SALUD
-# ==============================
-
-@app.get("/health", response_model=HealthResponse)
-def health():
-    return {
-        "status": "OK",
-        "service": "ReceiptIA",
-        "version": "1.0.0"
-    }
-
-
-# ==============================
 # METADATOS DE LA API
 # ==============================
 
-@app.get("/metadata", response_model=MetadataResponse)
+@app.get("/metadata")
 def metadata():
+    """Muestra las tecnologías principales utilizadas por ReceiptIA."""
     return {
         "nombre": "ReceiptIA",
         "descripcion": "Sistema inteligente para el análisis de facturas mediante OCR e IA.",
         "version": "1.0.0",
         "backend": "FastAPI",
         "ocr": "Tesseract OCR",
-        "modelo_ia": "Gemini 2.5 Flash"
+        "modelo_ia": "Gemini 2.5 Flash",
     }
 
 # ==============================
@@ -1117,12 +1090,12 @@ TEXTO_OCR:
         raise
 
     except Exception as e:
-        print(f"Error leyendo texto: {e}")
+        print(f"Error en procesamiento por lote: {e}")
 
-    raise HTTPException(
-        status_code=500,
-        detail=str(e)
-    )
+        raise HTTPException(
+            status_code=500,
+            detail=str(e),
+        ) from e
 
 
 # ==============================
@@ -1143,37 +1116,3 @@ async def leer_texto(file: UploadFile = File(...)):
     except Exception as e:
         print(f"Error leyendo texto: {e}")
         return {"error": str(e)}
-    
-# ==============================
-
-
-# ==============================
-
-@app.get("/health", response_model=HealthResponse)
-def health():
-
-    return {
-        "status": "OK",
-        "service": "ReceiptIA",
-        "version": "1.0.0"
-    }
-
-# ==============================
-@app.get("/metadata", response_model=MetadataResponse)
-def metadata():
-
-    return {
-
-        "nombre": "ReceiptIA",
-
-        "descripcion": "Sistema inteligente para analizar facturas mediante OCR e IA.",
-
-        "version": "1.0.0",
-
-        "backend": "FastAPI",
-
-        "ocr": "Tesseract OCR",
-
-        "modelo_ia": "Gemini 2.5 Flash"
-
-    }
