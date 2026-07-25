@@ -31,7 +31,11 @@ class MetadataResponse(BaseModel):
     ocr: str
     modelo_ia: str
 
-app = FastAPI()
+app = FastAPI(
+    title="ReceiptIA API",
+    description="Backend para auditoría inteligente de facturas y recibos.",
+    version="1.0.0",
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -40,6 +44,29 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ==============================
+# RUTAS DE INFORMACIÓN DEL SERVICIO
+# ==============================
+
+@app.get("/")
+def inicio():
+    """Muestra información general del backend."""
+    return {
+        "aplicacion": "ReceiptIA",
+        "version": "1.0.0",
+        "documentacion": "/docs",
+    }
+
+
+@app.get("/health")
+def health():
+    """Permite verificar que el backend está disponible."""
+    return {
+        "status": "ok",
+        "servicio": "ReceiptIA Backend",
+    }
 
 
 # ==============================
@@ -54,20 +81,33 @@ load_dotenv(BASE_DIR / ".env")
 # CONFIGURACIÓN DE GEMINI
 # ==============================
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+def obtener_cliente_gemini():
+    """
+    Crea el cliente de Gemini únicamente cuando se necesita.
 
-if not GEMINI_API_KEY or GEMINI_API_KEY.strip() == "" or GEMINI_API_KEY == "TU_API_KEY_VA_AQUI":
-    raise RuntimeError(
-        "No se encontró la API Key de Gemini. "
-        "Crea un archivo .env en la misma carpeta de main.py y coloca: "
-        "GEMINI_API_KEY=TU_API_KEY_REAL"
-    )
+    Esto permite importar y probar el backend sin guardar
+    una clave real dentro de GitHub Actions.
+    """
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+    api_key = os.getenv("GEMINI_API_KEY")
+
+    if (
+        not api_key
+        or not api_key.strip()
+        or api_key == "TU_API_KEY_VA_AQUI"
+    ):
+        raise RuntimeError(
+            "No se encontró la API Key de Gemini. "
+            "Crea un archivo .env en la misma carpeta de main.py y coloca: "
+            "GEMINI_API_KEY=TU_API_KEY_REAL"
+        )
+
+    return genai.Client(api_key=api_key)
+
 
 GEMINI_CONFIG = types.GenerateContentConfig(
     temperature=0,
-    response_mime_type="application/json"
+    response_mime_type="application/json",
 )
 
 
@@ -212,10 +252,12 @@ def generar_con_gemini(prompt):
     response_mime_type='application/json' obliga una salida JSON.
     """
 
+    client = obtener_cliente_gemini()
+
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=prompt,
-        config=GEMINI_CONFIG
+        config=GEMINI_CONFIG,
     )
 
     return response

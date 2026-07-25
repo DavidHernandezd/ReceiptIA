@@ -1,29 +1,68 @@
-# Entorno virtual
+# ==============================
+# ENTORNOS VIRTUALES
+# ==============================
 Backend/venv/
+Backend/.venv/
 venv/
+.venv/
 
-# Variables privadas
-Backend/.env
+# ==============================
+# VARIABLES PRIVADAS
+# ==============================
 .env
+.env.*
+!.env.example
 
-# Caché de Python
+Backend/.env
+Backend/.env.*
+!Backend/.env.example
+
+# ==============================
+# CACHÉ Y ARCHIVOS DE PYTHON
+# ==============================
 __pycache__/
-Backend/__pycache__/
+*.py[cod]
 *.pyc
 *.pyo
 
-# Carpetas de carga o temporales
+.pytest_cache/
+.ruff_cache/
+
+# ==============================
+# COBERTURA Y REPORTES DE PRUEBAS
+# ==============================
+.coverage
+htmlcov/
+reportes/
+Backend/reportes/
+
+# ==============================
+# CARPETAS DE CARGA O TEMPORALES
+# ==============================
 Backend/Uploads/
+Backend/uploads/
 temp_uploads/
 
-# Logs
+# ==============================
+# LOGS
+# ==============================
 *.log
 Backend/*.log
 Frontend/*.log
 
-# VS Code
+# ==============================
+# EDITORES
+# ==============================
 .vscode/
+.idea/
 
-# Sistema operativo
+# ==============================
+# SISTEMA OPERATIVO
+# ==============================
 .DS_Store
 Thumbs.db
+
+# ==============================
+# ARCHIVOS TEMPORALES
+# ==============================
+Captura de pantalla*.png
