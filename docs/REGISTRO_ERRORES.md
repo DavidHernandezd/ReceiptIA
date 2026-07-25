@@ -73,3 +73,14 @@ El archivo `.env` contiene información privada.
 
 Se agregó `.env` al `.gitignore` y se creó `.env.example` con valores
 de ejemplo.
+
+---
+
+## 6. Variable de excepción fuera de alcance
+
+### Problema
+
+GitHub Actions falló durante la revisión con Ruff y mostró el error:
+
+```text
+F821 Undefined name `e`
