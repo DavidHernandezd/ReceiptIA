@@ -444,4 +444,3 @@ Antes de entregar, verifiquen:
 - [x] El repositorio contiene código, README, configuración y evidencias relevantes.
 
 
-
