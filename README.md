@@ -426,22 +426,22 @@ Google GenAI SDK: Cliente oficial para la integración con la API de Gemini.
 
 Antes de entregar, verifiquen:
 
-- El PDF corresponde al proyecto real del grupo.
-- Se indica claramente la ruta elegida.
-- Existe Dockerfile o configuración de despliegue equivalente.
-- Existe .dockerignore o explicación equivalente.
-- Existe .env.example o documentación de variables.
-- No se publican claves, tokens ni datos sensibles.
-- Se documentan dependencias y comandos de ejecución.
-- Se prueba /health.
-- Se prueba endpoint principal.
-- Se incluyen capturas o logs de construcción, ejecución o despliegue.
-- Se explican errores, intentos y correcciones.
-- Se incluye plan de infraestructura mínima.
-- Se estiman costos iniciales.
-- Se documentan riesgos técnicos pendientes.
-- El PDF incluye una página con enlace al repositorio actualizado.
-- El repositorio contiene código, README, configuración y evidencias relevantes.
+[x] - El PDF corresponde al proyecto real del grupo.
+[x] - Se indica claramente la ruta elegida.[x]
+[x] - Existe Dockerfile o configuración de despliegue equivalente.
+[x] - Existe .dockerignore o explicación equivalente.
+[x] - Existe .env.example o documentación de variables.
+[x] - No se publican claves, tokens ni datos sensibles.
+[x] - Se documentan dependencias y comandos de ejecución.
+[x] - Se prueba /health.[x]
+[x] - Se prueba endpoint principal.[x]
+[x] - Se incluyen capturas o logs de construcción, ejecución o despliegue.
+[x] - Se explican errores, intentos y correcciones.
+[x] - Se incluye plan de infraestructura mínima.
+[x] - Se estiman costos iniciales.
+[x] - Se documentan riesgos técnicos pendientes.
+[x] - El PDF incluye una página con enlace al repositorio actualizado.
+[x] - El repositorio contiene código, README, configuración y evidencias relevantes.
 
 
 
