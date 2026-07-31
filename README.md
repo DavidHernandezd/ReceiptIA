@@ -5,7 +5,7 @@
 ## 1. Información General
 
 **Módulo:** Desarrollo de Aplicaciones con IA  
-**Semana:** Semana 1 - Diagnóstico e inventario técnico del proyecto  
+**Semana:** Semana 4 – Despliegue e Infraestructura Inicial
 **Nombre del proyecto:** ReceiptIA  
 **Integrantes:**  
 - Jonathan Elias Gamez Larin  
@@ -79,7 +79,7 @@ La inteligencia artificial participa después de extraer el texto de la factura.
 
 ---
 
-## 6. Estado Actual del Proyecto *ACTUALIZADO
+## 6. Estado Actual del Proyecto *ACTUALIZADO 
 
 ### Funcionalidades que ya funcionan
 
@@ -96,16 +96,24 @@ La inteligencia artificial participa después de extraer el texto de la factura.
 - Autenticación de usuarios con Firebase.
 - Roles básicos de administrador y auditor.
 
-*semana 2*
+# *semana 2*
 - *API REST estructurada con FastAPI.*
 - *Contratos estrictos de entrada y salida utilizando Pydantic para validacion de datos.*
 - *Endpoints de monitoreo y procesamiento completamente documentados.*
 
-*semana 3*
+# *semana 3*
 - *Pruebas automatizadas implementadas con Pytest, cobertura de endpoints y logica interna*
 - *Analisis de codigo estatico integrado con Ruff*
 - *Pipeline de Integracion Continua configurado en GitHub Actions.*
 
+# *semana 4*
+- Dockerfile implementado.
+- Contenedor Docker funcional.
+- .dockerignore agregado.
+- Variables documentadas mediante .env.example.
+- Backend ejecutándose mediante Docker.
+- Endpoint /health verificado.
+- Endpoint principal probado desde Swagger.
 
 ### Funcionalidades incompletas o pendientes
 
@@ -238,6 +246,40 @@ python -m venv venv
 pip install -r requirements.txt
 
 
+# Despliegue con Docker
+
+### Construir la imagen
+
+```bash
+docker build -t receiptia .
+```
+
+### Ejecutar el contenedor
+
+```bash
+docker run -p 8000:8000 receiptia
+```
+
+### Verificar funcionamiento
+
+Health:
+
+```
+http://localhost:8000/health
+```
+
+Swagger:
+
+```
+http://localhost:8000/docs
+```
+
+Endpoint principal:
+
+```
+POST /procesar
+```
+
 ### Ejecución
 
 # Ejecucion Manual Backend
@@ -341,11 +383,13 @@ La precisión del OCR depende de:
 
 ## 16. Limitaciones Actuales
 
--El sistema depende de una conexión a Internet para consumir la API de Gemini.
--La precisión del OCR disminuye cuando las imágenes tienen baja calidad o están deterioradas.
--El sistema está optimizado para facturas y tickets en español y puede presentar limitaciones con otros formatos o idiomas.
--El procesamiento depende de servicios externos que pueden experimentar saturación temporal.
--Actualmente no existen pruebas automatizadas ni una estrategia de despliegue en producción.
+- El sistema depende de una conexión a Internet para consumir la API de Gemini.
+- La precisión del OCR disminuye cuando las imágenes tienen baja calidad o están deterioradas.
+- El sistema está optimizado para facturas y tickets en español y puede presentar limitaciones con otros formatos o idiomas.
+- El procesamiento depende de servicios externos que pueden experimentar saturación temporal.
+- Actualmente no existen pruebas automatizadas ni una estrategia de despliegue en producción.
+- El despliegue se ha validado localmente mediante Docker.
+- Aun no existe un despliegue en produccion (Render, Railway, Azure, etc.).
 
 ## 17. Evidencias *ACTUALIZADO
 
@@ -356,7 +400,7 @@ La precisión del OCR depende de:
 | Codigo fuente        | `Backend/main.py`            | Endpoint principal de procesamiento                             |
 | Registro de errores  | `docs/REGISTRO_ERRORES.md`   | Documentacion de bloqueos, riesgos y soluciones implementadas   |
 | Evidencias Pruebas   | `docs/Evidencias_Testing.pdf`| Capturas de ejecución de pruebas locales y GitHub Actions       |
-
+| Docker               | `Evaluación Semana 4`        | Capturas de Docker Build, Docker Run, Endpoint/health, Endpoint/procesar,Swagger |
 
 
 ## 18. Créditos y Referencias
@@ -370,21 +414,34 @@ SheetJS: Librería utilizada para la exportación de información a Excel.
 Python Dotenv: Gestión segura de variables de entorno.
 Google GenAI SDK: Cliente oficial para la integración con la API de Gemini.
 
-## 19. Checklist de Revisión
+## 19. Versiones
+
+## Versiones
+
+| Version | Descripcion |
+|----------|-------------|
+| v0.4.0 | Docker e infraestructura inicial |
+
+## 20. Checklist de Revisión
 
 Antes de entregar, verifiquen:
 
-- [x] Existe carpeta tests/.
-- [x] Hay al menos dos pruebas relevantes.
-- [x] Las pruebas fueron ejecutadas localmente.
-- [x] Existe pipeline CI/CD o intento documentado.
-- [x] El README incluye comandos de prueba.
-- [x] Existe .env.example o documentacion equivalente.
-- [x] No se publican claves, tokens ni datos sensibles.
-- [x] Hay evidencia de ejecucion.
-- [x] Se documentan errores corregidos o bloqueos.
-- [x] Si participaron en la actividad bonus, se adjunta o referencia la mini-presentacion. 
-- [x] Todo lo entregado corresponde al proyecto real del grupo
+- El PDF corresponde al proyecto real del grupo.
+- Se indica claramente la ruta elegida.
+- Existe Dockerfile o configuración de despliegue equivalente.
+- Existe .dockerignore o explicación equivalente.
+- Existe .env.example o documentación de variables.
+- No se publican claves, tokens ni datos sensibles.
+- Se documentan dependencias y comandos de ejecución.
+- Se prueba /health.
+- Se prueba endpoint principal.
+- Se incluyen capturas o logs de construcción, ejecución o despliegue.
+- Se explican errores, intentos y correcciones.
+- Se incluye plan de infraestructura mínima.
+- Se estiman costos iniciales.
+- Se documentan riesgos técnicos pendientes.
+- El PDF incluye una página con enlace al repositorio actualizado.
+- El repositorio contiene código, README, configuración y evidencias relevantes.
 
 
 
