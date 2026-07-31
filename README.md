@@ -426,23 +426,22 @@ Google GenAI SDK: Cliente oficial para la integración con la API de Gemini.
 
 Antes de entregar, verifiquen:
 
-[x] - El PDF corresponde al proyecto real del grupo.
-[x] - Se indica claramente la ruta elegida.[x]
-[x] - Existe Dockerfile o configuración de despliegue equivalente.
-[x] - Existe .dockerignore o explicación equivalente.
-[x] - Existe .env.example o documentación de variables.
-[x] - No se publican claves, tokens ni datos sensibles.
-[x] - Se documentan dependencias y comandos de ejecución.
-[x] - Se prueba /health.[x]
-[x] - Se prueba endpoint principal.[x]
-[x] - Se incluyen capturas o logs de construcción, ejecución o despliegue.
-[x] - Se explican errores, intentos y correcciones.
-[x] - Se incluye plan de infraestructura mínima.
-[x] - Se estiman costos iniciales.
-[x] - Se documentan riesgos técnicos pendientes.
-[x] - El PDF incluye una página con enlace al repositorio actualizado.
-[x] - El repositorio contiene código, README, configuración y evidencias relevantes.
-
+- [x] El PDF corresponde al proyecto real del grupo.
+- [x] Se indica claramente la ruta elegida.
+- [x] Existe Dockerfile o configuración de despliegue equivalente.
+- [x] Existe .dockerignore o explicación equivalente.
+- [x] Existe .env.example o documentación de variables.
+- [x] No se publican claves, tokens ni datos sensibles.
+- [x] Se documentan dependencias y comandos de ejecución.
+- [x] Se prueba /health.
+- [x] Se prueba endpoint principal.
+- [x] Se incluyen capturas o logs de construcción, ejecución o despliegue.
+- [x] Se explican errores, intentos y correcciones.
+- [x] Se incluye plan de infraestructura mínima.
+- [x] Se estiman costos iniciales.
+- [x] Se documentan riesgos técnicos pendientes.
+- [x] El PDF incluye una página con enlace al repositorio actualizado.
+- [x] El repositorio contiene código, README, configuración y evidencias relevantes.
 
 
 
