@@ -5,7 +5,7 @@
 ## 1. Información General
 
 **Módulo:** Desarrollo de Aplicaciones con IA  
-**Semana:** Semana 4 – Despliegue e Infraestructura Inicial
+**Semana:** Semana 5 – Observabilidad, Rendimiento y Escalabilidad
 **Nombre del proyecto:** ReceiptIA  
 **Integrantes:**  
 - Jonathan Elias Gamez Larin  
@@ -97,14 +97,14 @@ La inteligencia artificial participa después de extraer el texto de la factura.
 - Roles básicos de administrador y auditor.
 
 # *semana 2*
-- *API REST estructurada con FastAPI.*
-- *Contratos estrictos de entrada y salida utilizando Pydantic para validacion de datos.*
-- *Endpoints de monitoreo y procesamiento completamente documentados.*
+- API REST estructurada con FastAPI.
+- Contratos estrictos de entrada y salida utilizando Pydantic para validacion de datos.
+- Endpoints de monitoreo y procesamiento completamente documentados.
 
 # *semana 3*
-- *Pruebas automatizadas implementadas con Pytest, cobertura de endpoints y logica interna*
-- *Analisis de codigo estatico integrado con Ruff*
-- *Pipeline de Integracion Continua configurado en GitHub Actions.*
+- Pruebas automatizadas implementadas con Pytest, cobertura de endpoints y logica interna
+- Analisis de codigo estatico integrado con Ruff
+- Pipeline de Integracion Continua configurado en GitHub Actions.
 
 # *semana 4*
 - Dockerfile implementado.
@@ -115,6 +115,20 @@ La inteligencia artificial participa después de extraer el texto de la factura.
 - Endpoint /health verificado.
 - Endpoint principal probado desde Swagger.
 
+# *semana 5*
+
+- Middleware HTTP de observabilidad implementado en FastAPI.
+- Generación de request_id único para correlacionar cada solicitud.
+- Registro estructurado de ruta, método, estado HTTP, duración, modelo de IA y tipo de error.
+- Registro de eventos exitosos y errores controlados sin almacenar el contenido sensible de las facturas.
+- Validación de entradas inválidas mediante respuestas HTTP 400.
+- Manejo y registro de errores internos mediante HTTP 500.
+- Manejo explícito de límites temporales de la API de Gemini mediante HTTP 429.
+- Benchmark del endpoint /procesar realizado con 20 solicitudes.
+- Línea base obtenida: 16 solicitudes exitosas y 4 errores, con una tasa de error del 20 %.
+- Identificación de la dependencia de Gemini y sus límites de cuota como restricción de rendimiento y disponibilidad.
+
+
 ### Funcionalidades incompletas o pendientes
 
 - Mejorar manejo de errores cuando el backend no está activo.
@@ -124,6 +138,45 @@ La inteligencia artificial participa después de extraer el texto de la factura.
 - Ajustar reglas de validación para reducir falsos positivos.
 - Fortalecer reglas de seguridad en Firebase.
 
+### Observabilidad y medición de rendimiento
+
+Se incorporo una capa mínima de observabilidad al Backend mediante un middleware HTTP.
+Cada solicitud recibe un request_id único y se registra información operacional para correlacionar las peticiones y analizar su comportamiento.
+
+CAMPOS REGISTRADOS
+
+| campo | Descripcion | 
+|---|---|
+| request_id | Identificador único de la solicitud |
+| route | Ruta o endpoint ejecutado |
+| method | Método HTTP utilizado |
+| status | Código de respuesta HTTP |
+| duration_ms | Duración total de la solicitud en milisegundos |
+| ai_model | Modelo de IA utilizado, actualmente Gemini 2.5 Flash |
+| error_type | Clasificación del error cuando ocurre una falla |
+
+LINEA BASE DE RENDIMIENTO
+
+El endpoint crítico seleccionado fue POST /procesar. Se ejecutó un benchmark de 20 solicitudes utilizando una imagen de factura como entrada.
+
+| Metrica | Resultado |
+|---|---|
+| solicitudes totales |20|
+| solicitudes exitosas |16|
+| errores |4|
+| tasa de error |20.00%|
+| p50 |10682.07 ms|
+| p95 |13712.31 ms|
+| tiempo maximo |17725.83 ms|
+
+Se identifico que el procesamiento depende fuertemente del tiempo de respuesta del servicio de Gemini. Durante las pruebas también se observaron respuestas HTTP 429 (RESOURCE_EXHAUSTED) debido al límite de solicitudes del nivel gratuito de la API. Esto constituye una restricción externa relevante para la disponibilidad y escalabilidad del endpoint.
+
+Evidencias generadas
+
+benchmark_resultados.csv: resultados individuales de las solicitudes realizadas.
+benchmark_resumen.txt: resumen de las métricas obtenidas.
+Logs del Backend con request_id, ruta, estado, duración, modelo y tipo de error.
+Evidencias de Swagger para solicitudes exitosas, entradas inválidas y errores controlados.
 
 
 ---
@@ -200,8 +253,12 @@ ReceiptIA/
 |   ├── riesgos-tecnicos.md
 |   ├── REGISTRO_ERRORES.md
 |   ├── Evidencias_Testing.pdf
+|   ├── benchmark_resultados.csv
+|   ├── benchmark_resumen.txt
+|   ├── Semana5_Observabilidad_Rendimiento_ReceiptIA.pdf
 |
 |-- Setup.bat            # Configuracion inicial del proyecto
+|-- benchmark.py
 |-- ReceiptIA.bat        # Inicio automatico del sistema
 |-- README.md            # Documentacion principal
 |-- .gitignore           # Exclusion de archivos sensibles
@@ -370,6 +427,7 @@ La precisión del OCR depende de:
 | Dependencia de Tesseract OCR instalado localmente | Dependencias | Alta | Alto | Automatizar instalación mediante Setup.bat y Docker
 | Saturación o indisponibilidad temporal de Gemini | Servicios Externos | Media | Alto | Implementar reintentos automáticos y modelos alternativos |
 | Dependencia de conexión a Internet | Infraestructura | Media | Alto | Validaciones y manejo de errores |
+| Límites de cuota de Gemini | Servicios Externos | Alta | Alto | Manejo de HTTP 429, reintentos controlados, modelos alternativos y futura estrategia de colas/workers |
 
 ## 15. Plan de Mejora por Semana
 
@@ -387,7 +445,7 @@ La precisión del OCR depende de:
 - La precisión del OCR disminuye cuando las imágenes tienen baja calidad o están deterioradas.
 - El sistema está optimizado para facturas y tickets en español y puede presentar limitaciones con otros formatos o idiomas.
 - El procesamiento depende de servicios externos que pueden experimentar saturación temporal.
-- Actualmente no existen pruebas automatizadas ni una estrategia de despliegue en producción.
+- Actualmente no existe un despliegue en producción; las pruebas automatizadas se ejecutan mediante Pytest y el pipeline de CI/CD mediante GitHub Actions.
 - El despliegue se ha validado localmente mediante Docker.
 - Aun no existe un despliegue en produccion (Render, Railway, Azure, etc.).
 
@@ -401,6 +459,9 @@ La precisión del OCR depende de:
 | Registro de errores  | `docs/REGISTRO_ERRORES.md`   | Documentacion de bloqueos, riesgos y soluciones implementadas   |
 | Evidencias Pruebas   | `docs/Evidencias_Testing.pdf`| Capturas de ejecución de pruebas locales y GitHub Actions       |
 | Docker               | `Evaluación Semana 4`        | Capturas de Docker Build, Docker Run, Endpoint/health, Endpoint/procesar,Swagger |
+| Observabilidad       | `Backend/main.py`            | Middleware HTTP, request_id, duración, estado, modelo y clasificación de errores |
+| Benchmark            | `benchmark.py y archivos generados` | Medición de 20 solicitudes y métricas p50, p95, máximo y tasa de error |
+| Resultados Benchmark | `benchmark_resultados.csv, benchmark_resumen.txt` | Resultados individuales y resumen de la línea base de rendimiento |
 
 
 ## 18. Créditos y Referencias
@@ -421,26 +482,25 @@ Google GenAI SDK: Cliente oficial para la integración con la API de Gemini.
 | Version | Descripcion |
 |----------|-------------|
 | v0.4.0 | Docker e infraestructura inicial |
+| v0.5.0 | Observabilidad, rendimiento y escalabilidad |
 
 ## 20. Checklist de Revisión
 
 Antes de entregar, verifiquen:
 
-- [x] El PDF corresponde al proyecto real del grupo.
-- [x] Se indica claramente la ruta elegida.
-- [x] Existe Dockerfile o configuración de despliegue equivalente.
-- [x] Existe .dockerignore o explicación equivalente.
-- [x] Existe .env.example o documentación de variables.
-- [x] No se publican claves, tokens ni datos sensibles.
-- [x] Se documentan dependencias y comandos de ejecución.
-- [x] Se prueba /health.
-- [x] Se prueba endpoint principal.
-- [x] Se incluyen capturas o logs de construcción, ejecución o despliegue.
-- [x] Se explican errores, intentos y correcciones.
-- [x] Se incluye plan de infraestructura mínima.
-- [x] Se estiman costos iniciales.
-- [x] Se documentan riesgos técnicos pendientes.
-- [x] El PDF incluye una página con enlace al repositorio actualizado.
-- [x] El repositorio contiene código, README, configuración y evidencias relevantes.
+[x] El PDF corresponde al proyecto real y define un endpoint o flujo crítico.
+[x] Se documentan preguntas de observabilidad.
+[x] Existe request_id o correlación equivalente.
+[x] Se registran estado, duración y versión del componente IA.
+[x] Se presenta un evento exitoso y un error controlado.
+[x] No se publican claves, tokens ni datos sensibles.
+[x] Se documenta el escenario de medición.
+[x] Se ejecutan al menos 20 solicitudes o se documenta el bloqueo.
+[x] Se incluyen p50, p95, máximo y tasa de error.
+[x] Se identifica un cuello de botella o riesgo.
+[x] Se explica una mejora aplicada o propuesta.
+[x] Se incluye un plan de escalabilidad basado en indicadores.
+[x] README, repositorio, medición y evidencias están actualizados.
+[x] El PDF contiene el enlace funcional al repositorio.
 
 

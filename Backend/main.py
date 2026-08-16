@@ -1,9 +1,14 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from google import genai
 from google.genai import types
 from typing import List
+from typing import Annotated
 import json
+import logging
+import time
+import uuid
+from contextvars import ContextVar
 import io
 import os
 import shutil
@@ -21,6 +26,116 @@ app = FastAPI(
     description="Backend para auditoría inteligente de facturas y recibos.",
     version="1.0.0",
 )
+
+# ==============================
+# OBSERVABILIDAD - SEMANA 5
+# ==============================
+# Versiones explícitas para poder correlacionar las mediciones y los logs.
+APP_VERSION = "1.0.0"
+AI_MODEL = "gemini-2.5-flash"
+AI_COMPONENT = "Gemini 2.5 Flash"
+PROMPT_VERSION = "1.0"
+
+_request_id_ctx: ContextVar[str] = ContextVar("request_id", default="-")
+
+
+class JsonFormatter(logging.Formatter):
+    """Formatter de logs estructurados para observabilidad.
+
+    Nunca registra contraseñas, tokens, headers de autorización, contenido de
+    archivos ni texto OCR completo.
+    """
+
+    def format(self, record):
+        payload = {
+            "timestamp": self.formatTime(record, datefmt="%Y-%m-%dT%H:%M:%S%z"),
+            "level": record.levelname,
+            "service": "receiptia-backend",
+            "request_id": getattr(record, "request_id", _request_id_ctx.get()),
+            "route": getattr(record, "route", None),
+            "method": getattr(record, "method", None),
+            "status": getattr(record, "status", None),
+            "duration_ms": getattr(record, "duration_ms", None),
+            "app_version": APP_VERSION,
+            "ai_component": AI_COMPONENT,
+            "ai_model": AI_MODEL,
+            "prompt_version": PROMPT_VERSION,
+            "event": getattr(record, "event", record.getMessage()),
+            "error_type": getattr(record, "error_type", None),
+        }
+
+        if record.exc_info:
+            payload["exception"] = self.formatException(record.exc_info)
+
+        return json.dumps(payload, ensure_ascii=False)
+
+
+logger = logging.getLogger("receiptia")
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(JsonFormatter())
+    logger.addHandler(handler)
+logger.propagate = False
+
+
+@app.middleware("http")
+async def observability_middleware(request: Request, call_next):
+    """Registra una línea estructurada por solicitud.
+
+    Campos mínimos de Semana 5: request_id, ruta, estado, duración y versión
+    del componente IA. El identificador también se devuelve en X-Request-ID.
+    """
+    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+    token = _request_id_ctx.set(request_id)
+    started = time.perf_counter()
+    status_code = 500
+    event = "request_error"
+    error_type = None
+
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        event = "request_completed" if status_code < 400 else "request_failed"
+        if status_code >= 400:
+            error_type = f"HTTP_{status_code}"
+        response.headers["X-Request-ID"] = request_id
+        return response
+    except Exception as exc:
+        error_type = type(exc).__name__
+        logger.error(
+            "Solicitud finalizada con excepción",
+            extra={
+                "request_id": request_id,
+                "route": request.url.path,
+                "method": request.method,
+                "status": 500,
+                "duration_ms": round((time.perf_counter() - started) * 1000, 2),
+                "event": "request_error",
+                "error_type": error_type,
+            },
+            exc_info=True,
+        )
+        raise
+    finally:
+        duration_ms = round((time.perf_counter() - started) * 1000, 2)
+        if event != "request_error" or status_code != 500:
+            log_level = logging.INFO if status_code < 400 else logging.WARNING
+            logger.log(
+                log_level,
+                "Solicitud procesada",
+                extra={
+                    "request_id": request_id,
+                    "route": request.url.path,
+                    "method": request.method,
+                    "status": status_code,
+                    "duration_ms": duration_ms,
+                    "event": event,
+                    "error_type": error_type,
+                },
+            )
+        _request_id_ctx.reset(token)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -233,19 +348,42 @@ def limpiar_json_respuesta(texto):
 def generar_con_gemini(prompt):
     """
     Envía el prompt a Gemini usando configuración estable.
-    temperature=0 reduce respuestas inconsistentes.
-    response_mime_type='application/json' obliga una salida JSON.
+
+    También mide el tiempo empleado exclusivamente por Gemini.
     """
 
     client = obtener_cliente_gemini()
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt,
-        config=GEMINI_CONFIG,
-    )
+    inicio_gemini = time.perf_counter()
 
-    return response
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=GEMINI_CONFIG,
+        )
+
+        duracion_gemini_ms = round(
+            (time.perf_counter() - inicio_gemini) * 1000,
+            2
+        )
+
+        print(f"Gemini completado en: {duracion_gemini_ms} ms")
+
+        return response
+
+    except Exception as e:
+        duracion_gemini_ms = round(
+            (time.perf_counter() - inicio_gemini) * 1000,
+            2
+        )
+
+        print(
+            f"Gemini falló después de: "
+            f"{duracion_gemini_ms} ms"
+        )
+
+        raise
 
 
 def crear_respuesta_error_ocr(texto_ocr):
@@ -834,11 +972,22 @@ LOTE DE FACTURAS EXTRAÍDAS POR TESSERACT OCR:
 def extraer_texto_de_archivo(file_name, content):
     """
     Abre una imagen, la limpia y extrae texto OCR.
+
+    También mide el tiempo empleado exclusivamente por el proceso OCR.
     """
+
+    inicio_ocr = time.perf_counter()
 
     img = Image.open(io.BytesIO(content)).convert("RGB")
     imagen_limpia = limpiar_imagen_para_ocr(img)
     texto_ocr = leer_texto_con_tesseract(imagen_limpia)
+
+    duracion_ocr_ms = round(
+        (time.perf_counter() - inicio_ocr) * 1000,
+        2
+    )
+
+    print(f"OCR completado en: {duracion_ocr_ms} ms")
 
     return texto_ocr
 
@@ -853,10 +1002,12 @@ def metadata():
     return {
         "nombre": "ReceiptIA",
         "descripcion": "Sistema inteligente para el análisis de facturas mediante OCR e IA.",
-        "version": "1.0.0",
+        "version": APP_VERSION,
         "backend": "FastAPI",
         "ocr": "Tesseract OCR",
-        "modelo_ia": "Gemini 2.5 Flash",
+        "modelo_ia": AI_COMPONENT,
+        "modelo_id": AI_MODEL,
+        "prompt_version": PROMPT_VERSION,
     }
 
 # ==============================
@@ -868,7 +1019,6 @@ def metadata():
 async def procesar(file: UploadFile = File(...)):
 
     try:
-
         # ==============================
         # VALIDAR EL ARCHIVO
         # ==============================
@@ -887,9 +1037,17 @@ async def procesar(file: UploadFile = File(...)):
         print(f"Tipo de archivo: {file.content_type}")
 
         content = await file.read()
+
         print(f"Tamaño recibido: {len(content)} bytes")
 
-        texto_ocr = extraer_texto_de_archivo(file.filename, content)
+        # ==============================
+        # OCR
+        # ==============================
+
+        texto_ocr = extraer_texto_de_archivo(
+            file.filename,
+            content
+        )
 
         print("Tesseract terminó de leer")
         print(f"Cantidad de caracteres OCR: {len(texto_ocr)}")
@@ -899,44 +1057,135 @@ async def procesar(file: UploadFile = File(...)):
         if not texto_ocr_es_valido(texto_ocr):
             return crear_respuesta_error_ocr(texto_ocr)
 
-        prompt = crear_prompt_factura_individual(texto_ocr)
+        # ==============================
+        # GEMINI
+        # ==============================
+
+        prompt = crear_prompt_factura_individual(
+            texto_ocr
+        )
 
         print("Enviando texto a Gemini...")
+
         response = generar_con_gemini(prompt)
+
         print("Gemini respondió")
 
-        resultado = limpiar_json_respuesta(response.text)
-        resultado = normalizar_factura(resultado)
+        # ==============================
+        # PROCESAR RESPUESTA
+        # ==============================
 
-        resultado["metodo"] = "Tesseract OCR + Gemini texto"
+        resultado = limpiar_json_respuesta(
+            response.text
+        )
+
+        resultado = normalizar_factura(
+            resultado
+        )
+
+        resultado["metodo"] = (
+            "Tesseract OCR + Gemini texto"
+        )
+
         resultado["texto_ocr"] = texto_ocr
 
-        resultado = corregir_falsos_positivos_factura_consumidor_final(resultado)
+        resultado = (
+            corregir_falsos_positivos_factura_consumidor_final(
+                resultado
+            )
+        )
 
-        print("Procesamiento individual finalizado correctamente")
+        print(
+            "Procesamiento individual "
+            "finalizado correctamente"
+        )
 
         return resultado
+
+    # ==============================
+    # ERRORES HTTP CONTROLADOS
+    # ==============================
 
     except HTTPException:
         raise
 
+    # ==============================
+    # ERRORES GENERALES
+    # ==============================
+
     except Exception as e:
 
-        print(f"Error en el servidor: {e}")
+        error_str = str(e)
+        error_lower = error_str.lower()
+
+        print(
+            f"Error en el servidor: {error_str}"
+        )
+
+        # ==============================
+        # CUOTA / LIMITE DE GEMINI
+        # ==============================
+
+        if (
+            getattr(e, "code", None) == 429
+            or "resource_exhausted" in error_lower
+            or "quota exceeded" in error_lower
+            or "too many requests" in error_lower
+        ):
+            raise HTTPException(
+                status_code=429,
+                detail=(
+                    "El servicio de IA alcanzó "
+                    "temporalmente su límite de "
+                    "solicitudes. "
+                    "Intente nuevamente más tarde."
+                )
+            )
+
+        # ==============================
+        # OTROS ERRORES
+        # ==============================
 
         raise HTTPException(
             status_code=500,
-            detail=str(e)
+            detail=(
+                "Error interno durante el "
+                "procesamiento de la factura."
+            )
         )
-
 
 # ==============================
 # RUTA POR LOTE
 # VARIAS IMÁGENES + UNA SOLICITUD A GEMINI
 # ==============================
 
-@app.post("/procesar-lote")
-async def procesar_lote(files: List[UploadFile] = File(...)):
+@app.post(
+    "/procesar-lote",
+    openapi_extra={
+        "requestBody": {
+            "content": {
+                "multipart/form-data": {
+                    "schema": {
+                        "type": "object",
+                        "required": ["files"],
+                        "properties": {
+                            "files": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+)
+async def procesar_lote(
+    files: Annotated[List[UploadFile], File(...)]
+):
     try:
         print("====================================")
         print(f"Lote recibido con {len(files)} archivo(s)")
@@ -1001,15 +1250,18 @@ async def procesar_lote(files: List[UploadFile] = File(...)):
                 })
 
             except Exception as e:
-                print(f"Error OCR en {nombre_archivo}: {e}")
+                error_str = str(e)
+                print(f"Error procesando OCR de {nombre_archivo}: {error_str}")
+
                 facturas_invalidas.append(
                     crear_respuesta_error_lote(
                         factura_id,
                         nombre_archivo,
                         "",
-                        f"Error al leer la imagen: {str(e)}"
+                        f"Error durante el procesamiento OCR: {error_str}"
                     )
                 )
+                continue
 
         if len(facturas_validas) == 0:
             return {
@@ -1017,6 +1269,10 @@ async def procesar_lote(files: List[UploadFile] = File(...)):
                 "metodo": "Tesseract OCR + Gemini texto en lote",
                 "cantidad": len(facturas_invalidas)
             }
+
+        # ==============================
+        # PREPARAR LOTE PARA GEMINI
+        # ==============================
 
         bloques = []
 
@@ -1036,9 +1292,50 @@ TEXTO_OCR:
 
         prompt = crear_prompt_lote(bloques_facturas)
 
+        # ==============================
+        # GEMINI
+        # ==============================
+
         print("Enviando lote a Gemini...")
-        response = generar_con_gemini(prompt)
-        print("Gemini respondió al lote")
+
+        try:
+            response = generar_con_gemini(prompt)
+            print("Gemini respondió al lote")
+
+        except Exception as e:
+            error_str = str(e)
+            error_lower = error_str.lower()
+
+            print("====================================")
+            print("ERROR DE GEMINI")
+            print(f"Tipo: {type(e).__name__}")
+            print(f"Mensaje: {error_str}")
+            print("====================================")
+
+            if (
+                getattr(e, "code", None) == 429
+                or "resource_exhausted" in error_lower
+                or "quota exceeded" in error_lower
+                or "too many requests" in error_lower
+                or "429" in error_lower
+            ):
+                raise HTTPException(
+                    status_code=429,
+                    detail=(
+                        "El servicio de IA alcanzó temporalmente "
+                        "su límite de solicitudes. "
+                        "Intente nuevamente más tarde."
+                    )
+                ) from e
+
+            raise HTTPException(
+                status_code=500,
+                detail="Error interno durante el procesamiento con Gemini."
+            ) from e
+
+        # ==============================
+        # PROCESAR RESPUESTA DE GEMINI
+        # ==============================
 
         resultado_lote = limpiar_json_respuesta(response.text)
 
@@ -1059,11 +1356,20 @@ TEXTO_OCR:
 
             factura["texto_ocr"] = texto_original
 
-            factura = corregir_falsos_positivos_factura_consumidor_final(factura)
+            factura = corregir_falsos_positivos_factura_consumidor_final(
+                factura
+            )
 
             facturas_finales.append(factura)
 
-        ids_devuelto = set([factura.get("factura_id") for factura in facturas_finales])
+        # ==============================
+        # DETECTAR FACTURAS OMITIDAS
+        # ==============================
+
+        ids_devuelto = {
+            factura.get("factura_id")
+            for factura in facturas_finales
+        }
 
         for original in facturas_validas:
             if original["factura_id"] not in ids_devuelto:
@@ -1090,7 +1396,13 @@ TEXTO_OCR:
         raise
 
     except Exception as e:
-        print(f"Error en procesamiento por lote: {e}")
+        error_str = str(e)
+
+        print("====================================")
+        print("ERROR EN PROCESAMIENTO POR LOTE")
+        print(f"Tipo: {type(e).__name__}")
+        print(f"Mensaje: {error_str}")
+        print("====================================")
 
         raise HTTPException(
             status_code=500,

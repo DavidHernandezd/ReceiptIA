@@ -1,0 +1,11 @@
+BENCHMARK RECEIPTIA - SEMANA 5
+==================================================
+
+Endpoint: http://127.0.0.1:8000/procesar
+Solicitudes: 20
+Exitosas: 16
+Errores: 4
+Tasa de error: 20.00%
+p50: 10682.07 ms
+p95: 13712.31 ms
+Máximo: 17725.83 ms
