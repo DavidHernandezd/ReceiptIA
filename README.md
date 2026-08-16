@@ -486,8 +486,6 @@ Google GenAI SDK: Cliente oficial para la integración con la API de Gemini.
 
 ## 20. Checklist de Revisión
 
-## 20. Checklist de Revisión
-
 * [x] El PDF corresponde al proyecto real y define un endpoint o flujo crítico.
 * [x] Se documentan preguntas de observabilidad.
 * [x] Existe `request_id` o correlación equivalente.
