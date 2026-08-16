@@ -486,21 +486,24 @@ Google GenAI SDK: Cliente oficial para la integración con la API de Gemini.
 
 ## 20. Checklist de Revisión
 
+## 20. Checklist de Revisión
+
 Antes de entregar, verifiquen:
 
-[x] El PDF corresponde al proyecto real y define un endpoint o flujo crítico.
-[x] Se documentan preguntas de observabilidad.
-[x] Existe request_id o correlación equivalente.
-[x] Se registran estado, duración y versión del componente IA.
-[x] Se presenta un evento exitoso y un error controlado.
-[x] No se publican claves, tokens ni datos sensibles.
-[x] Se documenta el escenario de medición.
-[x] Se ejecutan al menos 20 solicitudes o se documenta el bloqueo.
-[x] Se incluyen p50, p95, máximo y tasa de error.
-[x] Se identifica un cuello de botella o riesgo.
-[x] Se explica una mejora aplicada o propuesta.
-[x] Se incluye un plan de escalabilidad basado en indicadores.
-[x] README, repositorio, medición y evidencias están actualizados.
-[x] El PDF contiene el enlace funcional al repositorio.
+* [x] El PDF corresponde al proyecto real y define un endpoint o flujo crítico.
+* [x] Se documentan preguntas de observabilidad.
+* [x] Existe `request_id` o correlación equivalente.
+* [x] Se registran estado, duración y versión del componente IA.
+* [x] Se presenta un evento exitoso y un error controlado.
+* [x] No se publican claves, tokens ni datos sensibles.
+* [x] Se documenta el escenario de medición.
+* [x] Se ejecutan al menos 20 solicitudes o se documenta el bloqueo.
+* [x] Se incluyen p50, p95, máximo y tasa de error.
+* [x] Se identifica un cuello de botella o riesgo.
+* [x] Se explica una mejora aplicada o propuesta.
+* [x] Se incluye un plan de escalabilidad basado en indicadores.
+* [x] README, repositorio, medición y evidencias están actualizados.
+* [x] El PDF contiene el enlace funcional al repositorio.
+
 
 
