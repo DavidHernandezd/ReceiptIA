@@ -204,6 +204,7 @@ body{font-family:'Inter',sans-serif;}
 
 <script type="module">
 import { auth, db } from "./firebase-config.js";
+import { API_URL } from "./config.js";
 
 import {
     createUserWithEmailAndPassword,
@@ -837,7 +838,7 @@ uploadBtn.onclick = async ()=>{
                 formData.append('files', file);
             });
 
-            const response = await fetchConTiempoLimite('http://127.0.0.1:8000/procesar-lote',{
+            const response = await fetchConTiempoLimite(`${API_URL}/procesar-lote`, {
                 method:'POST',
                 body:formData
             }, 180000);
