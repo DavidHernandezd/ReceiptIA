@@ -92,3 +92,46 @@ def test_gemini_requiere_variable_de_entorno(monkeypatch):
 
     with pytest.raises(RuntimeError):
         main.obtener_cliente_gemini()
+
+def test_calidad_ia_respuesta_completa():
+    factura = {
+        "comercio": "Comercio de prueba",
+        "fecha": "2026-08-20",
+        "items": [
+            {
+                "descripcion": "Producto",
+                "monto": 11.30
+            }
+        ],
+        "subtotal": 10.00,
+        "iva": 1.30,
+        "total": 11.30,
+        "es_exenta": False,
+        "tiene_anomalias": False,
+        "anomalias": []
+    }
+
+    resultado = main.evaluar_calidad_respuesta_ia(factura)
+
+    assert resultado["puntaje"] == 100
+    assert resultado["nivel"] == "Excelente"
+    assert resultado["requiere_revision"] is False
+
+
+def test_calidad_ia_detecta_respuesta_incompleta():
+    factura = {
+        "comercio": None,
+        "fecha": None,
+        "items": [],
+        "subtotal": 0.00,
+        "iva": 0.00,
+        "total": 0.00,
+        "es_exenta": False,
+        "tiene_anomalias": False,
+        "anomalias": []
+    }
+
+    resultado = main.evaluar_calidad_respuesta_ia(factura)
+
+    assert resultado["puntaje"] < 75
+    assert resultado["requiere_revision"] is True

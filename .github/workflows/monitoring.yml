@@ -1,0 +1,55 @@
+﻿name: Monitoring - ReceiptIA
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  health-check:
+    name: Verificar disponibilidad del backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Verificar BACKEND_URL
+        env:
+          BACKEND_URL: ${{ vars.BACKEND_URL }}
+        run: |
+          if [ -z "$BACKEND_URL" ]; then
+            echo "BACKEND_URL no esta configurada."
+            echo "El monitoreo requiere la URL publica del backend."
+            exit 1
+          fi
+
+      - name: Comprobar endpoint de salud
+        env:
+          BACKEND_URL: ${{ vars.BACKEND_URL }}
+        run: |
+          START=$(date +%s%3N)
+
+          STATUS=$(curl \
+            --silent \
+            --output /tmp/health-response.json \
+            --write-out "%{http_code}" \
+            --max-time 30 \
+            "$BACKEND_URL/health")
+
+          END=$(date +%s%3N)
+          DURATION=$((END - START))
+
+          echo "URL monitoreada: $BACKEND_URL/health"
+          echo "HTTP status: $STATUS"
+          echo "Duracion: ${DURATION} ms"
+
+          if [ "$STATUS" != "200" ]; then
+            echo "ERROR: el backend no respondio con HTTP 200."
+            echo "Respuesta:"
+            cat /tmp/health-response.json
+            exit 1
+          fi
+
+          echo "Backend disponible correctamente."
