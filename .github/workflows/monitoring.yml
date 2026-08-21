@@ -2,6 +2,8 @@ name: Monitoring - ReceiptIA
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
 
 permissions:
   contents: read
@@ -19,8 +21,8 @@ jobs:
         run: |
           if [ -z "$BACKEND_URL" ]; then
             echo "BACKEND_URL no esta configurada."
-            echo "El monitoreo queda preparado hasta disponer de la URL publica."
-            exit 0
+            echo "El monitoreo requiere la URL publica del backend."
+            exit 1
           fi
 
       - name: Comprobar endpoint de salud
