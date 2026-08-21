@@ -62,6 +62,10 @@ class JsonFormatter(logging.Formatter):
             "prompt_version": PROMPT_VERSION,
             "event": getattr(record, "event", record.getMessage()),
             "error_type": getattr(record, "error_type", None),
+            "quality_score": getattr(record, "quality_score", None),
+            "quality_level": getattr(record, "quality_level", None),
+            "quality_missing_fields": getattr(record, "quality_missing_fields", None),
+            "quality_issues": getattr(record, "quality_issues", None),
         }
 
         if record.exc_info:
@@ -465,6 +469,110 @@ def normalizar_factura(factura):
 
     return factura
 
+# ==============================
+# MONITOREO DE CALIDAD DE IA
+# ==============================
+
+def evaluar_calidad_respuesta_ia(factura):
+    """
+    Calcula un indicador de calidad de 0 a 100 para la respuesta de Gemini.
+
+    Este indicador mide completitud y consistencia de la respuesta.
+    No representa por sí solo la exactitud real del modelo.
+    """
+
+    puntaje = 0
+    campos_faltantes = []
+    observaciones = []
+
+    # Comercio: 20 puntos
+    if factura.get("comercio"):
+        puntaje += 20
+    else:
+        campos_faltantes.append("comercio")
+
+    # Fecha: 15 puntos
+    if factura.get("fecha"):
+        puntaje += 15
+    else:
+        campos_faltantes.append("fecha")
+
+    # Total válido: 20 puntos
+    total = factura.get("total")
+
+    if isinstance(total, (int, float)) and total >= 0:
+        puntaje += 20
+    else:
+        observaciones.append("total_invalido")
+
+    # Items detectados: 15 puntos
+    items = factura.get("items")
+
+    if isinstance(items, list) and len(items) > 0:
+        puntaje += 15
+    else:
+        campos_faltantes.append("items")
+
+    # Consistencia de anomalías: 15 puntos
+    tiene_anomalias = factura.get("tiene_anomalias")
+    anomalias = factura.get("anomalias")
+
+    if isinstance(tiene_anomalias, bool) and isinstance(anomalias, list):
+        if tiene_anomalias == (len(anomalias) > 0):
+            puntaje += 15
+        else:
+            observaciones.append("inconsistencia_anomalias")
+    else:
+        observaciones.append("estructura_anomalias_invalida")
+
+    # Subtotal e IVA numéricos: 10 puntos
+    subtotal = factura.get("subtotal")
+    iva = factura.get("iva")
+
+    if (
+        isinstance(subtotal, (int, float))
+        and isinstance(iva, (int, float))
+    ):
+        puntaje += 10
+    else:
+        observaciones.append("montos_invalidos")
+
+    # Respuesta sin error: 5 puntos
+    if not factura.get("error"):
+        puntaje += 5
+
+    # Clasificación
+    if puntaje >= 90:
+        nivel = "Excelente"
+    elif puntaje >= 75:
+        nivel = "Buena"
+    elif puntaje >= 60:
+        nivel = "Revisión recomendada"
+    else:
+        nivel = "Baja"
+
+    resultado = {
+        "puntaje": puntaje,
+        "nivel": nivel,
+        "requiere_revision": puntaje < 75,
+        "campos_faltantes": campos_faltantes,
+        "observaciones": observaciones,
+        "modelo": AI_MODEL,
+        "prompt_version": PROMPT_VERSION,
+    }
+
+    logger.info(
+        "Calidad de respuesta IA evaluada",
+        extra={
+            "event": "ai_quality_evaluated",
+            "quality_score": puntaje,
+            "quality_level": nivel,
+            "quality_missing_fields": campos_faltantes,
+            "quality_issues": observaciones,
+        },
+    )
+
+    return resultado
 
 def corregir_falsos_positivos_factura_consumidor_final(factura):
     """

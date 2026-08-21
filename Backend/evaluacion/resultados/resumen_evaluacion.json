@@ -1,0 +1,15 @@
+{
+    "modelo": "gemini-2.5-flash",
+    "prompt_version": "1.0",
+    "casos_totales": 4,
+    "casos_completados": 4,
+    "errores_ejecucion": 0,
+    "precision_general": 100.0,
+    "precision_por_campo": {
+        "comercio": 100.0,
+        "fecha": 100.0,
+        "total": 100.0,
+        "es_exenta": 100.0,
+        "tiene_anomalias": 100.0
+    }
+}
