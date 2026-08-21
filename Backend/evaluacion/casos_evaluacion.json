@@ -1,0 +1,50 @@
+[
+    {
+        "id": "caso_1",
+        "descripcion": "Factura consumidor final correcta",
+        "texto_ocr": "TIENDA CENTRAL\nFACTURA CONSUMIDOR FINAL\nFecha: 2026-08-20\nProducto A $10.00\nSubtotal $10.00\nIVA $1.30\nTotal a pagar $11.30",
+        "esperado": {
+            "comercio": "TIENDA CENTRAL",
+            "fecha": "2026-08-20",
+            "total": 11.30,
+            "es_exenta": false,
+            "tiene_anomalias": false
+        }
+    },
+    {
+        "id": "caso_2",
+        "descripcion": "Venta exenta correcta",
+        "texto_ocr": "UNIVERSIDAD DE PRUEBA\nFecha: 2026-08-20\nVentas Exentas: $143.75\nVentas Gravadas: $0.00\nIVA: $0.00\nTotal a pagar: $143.75",
+        "esperado": {
+            "comercio": "UNIVERSIDAD DE PRUEBA",
+            "fecha": "2026-08-20",
+            "total": 143.75,
+            "es_exenta": true,
+            "tiene_anomalias": false
+        }
+    },
+    {
+        "id": "caso_3",
+        "descripcion": "Consumidor final sin IVA separado",
+        "texto_ocr": "SUPERMERCADO DEMO\nFACTURA CONSUMIDOR FINAL\nFecha: 2026-08-20\nMonto total de la operación $50.00\nTotal a pagar $50.00",
+        "esperado": {
+            "comercio": "SUPERMERCADO DEMO",
+            "fecha": "2026-08-20",
+            "total": 50.00,
+            "es_exenta": false,
+            "tiene_anomalias": false
+        }
+    },
+    {
+        "id": "caso_4",
+        "descripcion": "Crédito fiscal con IVA incorrecto",
+        "texto_ocr": "COMERCIAL EJEMPLO\nCOMPROBANTE DE CREDITO FISCAL\nFecha: 2026-08-20\nVentas Gravadas: $100.00\nIVA: $5.00\nTotal: $105.00",
+        "esperado": {
+            "comercio": "COMERCIAL EJEMPLO",
+            "fecha": "2026-08-20",
+            "total": 105.00,
+            "es_exenta": false,
+            "tiene_anomalias": true
+        }
+    }
+]

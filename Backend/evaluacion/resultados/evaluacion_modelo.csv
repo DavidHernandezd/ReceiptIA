@@ -1,0 +1,5 @@
+﻿caso,descripcion,estado,precision_caso,error,comercio,obtenido_comercio,esperado_comercio,fecha,obtenido_fecha,esperado_fecha,total,obtenido_total,esperado_total,es_exenta,obtenido_es_exenta,esperado_es_exenta,tiene_anomalias,obtenido_tiene_anomalias,esperado_tiene_anomalias
+caso_1,Factura consumidor final correcta,OK,100.0,,OK,TIENDA CENTRAL,TIENDA CENTRAL,OK,2026-08-20,2026-08-20,OK,11.3,11.3,OK,False,False,OK,False,False
+caso_2,Venta exenta correcta,OK,100.0,,OK,UNIVERSIDAD DE PRUEBA,UNIVERSIDAD DE PRUEBA,OK,2026-08-20,2026-08-20,OK,143.75,143.75,OK,True,True,OK,False,False
+caso_3,Consumidor final sin IVA separado,OK,100.0,,OK,SUPERMERCADO DEMO,SUPERMERCADO DEMO,OK,2026-08-20,2026-08-20,OK,50.0,50.0,OK,False,False,OK,False,False
+caso_4,Crédito fiscal con IVA incorrecto,OK,100.0,,OK,COMERCIAL EJEMPLO,COMERCIAL EJEMPLO,OK,2026-08-20,2026-08-20,OK,105.0,105.0,OK,False,False,OK,True,True
