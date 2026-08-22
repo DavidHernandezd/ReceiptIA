@@ -143,7 +143,7 @@ async def observability_middleware(request: Request, call_next):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://receiptia-production-c5cc.up.railway.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -1159,8 +1159,8 @@ async def procesar(file: UploadFile = File(...)):
 
         print("Tesseract terminó de leer")
         print(f"Cantidad de caracteres OCR: {len(texto_ocr)}")
-        print("Primeros 300 caracteres OCR:")
-        print(texto_ocr[:300])
+        #print("Primeros 300 caracteres OCR:")
+        #print(texto_ocr[:300])
 
         if not texto_ocr_es_valido(texto_ocr):
             return crear_respuesta_error_ocr(texto_ocr)
