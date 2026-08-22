@@ -846,6 +846,14 @@ uploadBtn.onclick = async ()=>{
 
             console.log(`Respuesta recibida para lote ${loteIndex + 1}:`, data);
 
+            if (!response.ok) {
+                throw new Error(
+                    data.detail ||
+                    data.error ||
+                    `Error del backend (${response.status})`
+                );
+            }
+
             if(data.error){
                 throw new Error(data.error);
             }
