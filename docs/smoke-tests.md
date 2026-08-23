@@ -61,7 +61,6 @@ Verificar rápidamente que los componentes críticos de ReceiptIA funcionan corr
 
 Durante la prueba ST-03, el endpoint `/metadata` devolvió información coherente con la versión candidata:
 
-```json
 {
   "nombre": "ReceiptIA",
   "descripcion": "Sistema inteligente para el análisis de facturas mediante OCR e IA.",
@@ -72,3 +71,44 @@ Durante la prueba ST-03, el endpoint `/metadata` devolvió información coherent
   "modelo_id": "gemini-2.5-flash",
   "prompt_version": "1.0"
 }
+
+Criterio de aceptación
+
+El release candidato puede considerarse apto para demostración cuando:
+
+El frontend carga correctamente.
+/health responde correctamente.
+/metadata reporta la versión esperada.
+Swagger se encuentra disponible.
+El usuario puede autenticarse.
+El flujo crítico de procesamiento funciona con datos ficticios o autorizados.
+OCR extrae información del documento.
+Gemini devuelve resultados estructurados cuando existe disponibilidad de cuota.
+El procesamiento por lote funciona correctamente.
+El frontend se comunica con el backend sin errores CORS.
+Los logs no exponen secretos ni contenido OCR sensible.
+Los errores asociados a servicios externos se presentan de forma controlada.
+Limitaciones observadas
+
+ReceiptIA depende de servicios externos, por lo que una prueba exitosa no garantiza disponibilidad permanente.
+
+Entre las principales limitaciones se encuentran:
+
+La cuota de Gemini puede producir respuestas HTTP 429.
+La disponibilidad de Railway puede afectar el frontend o backend.
+Firebase Authentication y Firestore dependen de servicios externos.
+La calidad del OCR depende de la legibilidad y calidad de las imágenes.
+Los resultados generados por inteligencia artificial requieren revisión humana cuando exista duda.
+Resultado general
+
+Las pruebas de humo ejecutadas sobre el entorno público verificaron correctamente los componentes principales de ReceiptIA.
+
+Los flujos de autenticación, procesamiento individual, OCR, análisis mediante Gemini, procesamiento por lote, comunicación frontend-backend y observabilidad funcionaron correctamente durante la ejecución final.
+
+El caso ST-09 no fue reproducido durante esta ronda de pruebas. Sin embargo, el manejo del error HTTP 429 se encuentra implementado y este tipo de respuesta fue observado previamente durante pruebas de rendimiento.
+
+Estado
+
+Pruebas de humo ejecutadas sobre el entorno público de ReceiptIA.
+
+Estado general: APROBADO PARA DEMOSTRACIÓN, sujeto a la disponibilidad de los servicios externos utilizados por la aplicación.
