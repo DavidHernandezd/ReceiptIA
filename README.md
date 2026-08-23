@@ -5,7 +5,7 @@
 ## 1. Información General
 
 **Módulo:** Desarrollo de Aplicaciones con IA  
-**Semana:** Semana 5 – Observabilidad, Rendimiento y Escalabilidad
+**Semana:** Semana 7 – Producto público, defensa técnica y cierre integrador
 **Nombre del proyecto:** ReceiptIA  
 **Integrantes:**  
 - Jonathan Elias Gamez Larin  
@@ -13,6 +13,27 @@
 - David Arnoldo Hernández Gómez  
 
 ---
+
+## Despliegue público
+
+ReceiptIA se encuentra desplegado publicamente en Railway.
+
+- Frontend:
+  https://receiptia-production-c5cc.up.railway.app
+
+- Backend:
+  https://receiptia-production.up.railway.app
+
+- Health:
+  https://receiptia-production.up.railway.app/health
+
+- Metadata:
+  https://receiptia-production.up.railway.app/metadata
+
+- Swagger:
+  https://receiptia-production.up.railway.app/docs
+
+El frontend se sirve mediante Nginx y el backend se ejecuta como una API FastAPI containerizada con Docker.
 
 ## 2. Descripción del Problema
 
@@ -71,7 +92,7 @@ Datos estructurados como comercio, NIT, fecha, productos o servicios, subtotal, 
 | Modelo, servicio o técnica | Tesseract OCR para lectura de texto y Gemini 2.5 Flash para interpretación y análisis |
 | Datos de entrada | Imagen de factura, texto extraído por OCR y reglas de validación fiscal |
 | Resultado generado por la IA | Información estructurada, detección de anomalías y clasificación del documento |
-| Forma de evaluación | Comparación entre la factura original, el texto OCR y los resultados mostrados en el Dashboard |
+| Forma de evaluación | Casos de evaluación automatizados con valores esperados y resultados registrados en Backend/evaluacion/resultados |
 | Limitaciones actuales | La calidad de la imagen puede afectar el OCR; Gemini depende de conexión a internet y API Key válida |
 
 **Explicación breve:**  
@@ -98,8 +119,9 @@ La inteligencia artificial participa después de extraer el texto de la factura.
 
 # *semana 2*
 - API REST estructurada con FastAPI.
-- Contratos estrictos de entrada y salida utilizando Pydantic para validacion de datos.
-- Endpoints de monitoreo y procesamiento completamente documentados.
+- Entradas de archivos definidas mediante UploadFile, anotaciones de tipo y esquemas OpenAPI multipart/form-data.
+- Endpoints de monitoreo y procesamiento documentados mediante Swagger/OpenAPI.
+- La implementación de modelos Pydantic específicos para respuestas estructuradas queda como mejora futura.
 
 # *semana 3*
 - Pruebas automatizadas implementadas con Pytest, cobertura de endpoints y logica interna
@@ -128,10 +150,22 @@ La inteligencia artificial participa después de extraer el texto de la factura.
 - Línea base obtenida: 16 solicitudes exitosas y 4 errores, con una tasa de error del 20 %.
 - Identificación de la dependencia de Gemini y sus límites de cuota como restricción de rendimiento y disponibilidad.
 
+# *semana 6 / semana 7*
+
+- Frontend y backend desplegados públicamente en Railway.
+- Frontend servido mediante Nginx en un contenedor independiente.
+- Backend FastAPI desplegado mediante Docker con Tesseract OCR disponible en el entorno de producción.
+- Endpoint `/health` disponible para verificación del servicio.
+- Endpoint `/metadata` disponible para consultar versión de aplicación, modelo de IA y versión del prompt.
+- CORS restringido al dominio público del frontend.
+- Se eliminó el registro de fragmentos de texto OCR en logs para reducir exposición de información sensible.
+- El frontend interpreta respuestas HTTP no exitosas del backend y muestra mensajes controlados, incluyendo errores HTTP 429 por límite de cuota de Gemini.
+- El flujo de procesamiento individual y por lotes ha sido probado desde el entorno público.
+- Se mantiene como limitación la dependencia de la disponibilidad y cuota del servicio externo de Gemini.
+
 
 ### Funcionalidades incompletas o pendientes
 
-- Mejorar manejo de errores cuando el backend no está activo.
 - Agregar almacenamiento de imágenes en la nube en una etapa futura.
 - Mejorar la precisión del OCR con imágenes borrosas.
 - Documentar mejor la instalación en otra computadora.
@@ -191,33 +225,68 @@ Evidencias de Swagger para solicitudes exitosas, entradas inválidas y errores c
 | IA generativa | Gemini 2.5 Flash para analizar el texto extraído y detectar anomalías | Implementado |
 | Base de datos | Firestore para guardar usuarios, facturas, historial y carpetas | Implementado |
 | Autenticación | Firebase Authentication para inicio de sesión y manejo de usuarios | Implementado |
-| Roles | Administrador y auditor | Implementado |
+| Roles | Perfiles básicos de administrador y auditor en la interfaz y datos de usuario | Implementado parcialmente |
 | Exportación | SheetJS/XLSX para generar archivos de Excel | Implementado |
 | Dependencias | FastAPI, Uvicorn, Google GenAI, Pillow, Pytesseract, OpenCV, NumPy y Python Multipart | Configuradas |
 | Configuración | API Key de Gemini, configuración de Firebase y ruta local de Tesseract OCR | Configurada |
 
-## 8. Arquitectura Objetivo
+## 8. Arquitectura Actual y Evolución
 
-La arquitectura objetivo busca la separación entre interfaz, backend, inteligencia artificial, datos y configuración. El sistema evolucionará hacia una arquitectura desacoplada basada en una API REST stateless, permitiendo su despliegue en diferentes entornos y reduciendo las dependencias del sistema operativo del usuario.
+ReceiptIA utiliza actualmente una arquitectura cliente-servidor desacoplada y desplegada en servicios independientes.
 
+### Arquitectura actual
 
-**Archivo sugerido:** `docs/arquitectura-objetivo.md` o `docs/arquitectura-objetivo.png`
+- **Frontend:** HTML, JavaScript, Tailwind CSS y Nginx.
+- **Backend:** FastAPI ejecutándose en Python y desplegado mediante Docker.
+- **OCR:** Tesseract OCR instalado dentro del entorno del backend.
+- **IA generativa:** Gemini 2.5 Flash mediante Google GenAI SDK.
+- **Autenticación:** Firebase Authentication.
+- **Persistencia:** Firebase Firestore.
+- **Hosting:** Railway para frontend y backend.
 
-**Elementos esperados:**
+### Flujo principal
 
-- **API o endpoint inteligente:** Implementación de modelos Pydantic en FastAPI para establecer contratos estrictos de entrada y salida y mejorar la validación de datos.
-- **Separación entre interfaz, backend, IA y datos:** Frontend desacoplado del Backend, FastAPI como servicio independiente, Firebase como fuente de autenticación y persistencia, y abstracción de los componentes de OCR e IA.
-- **Pruebas mínimas:** Integración de pytest para validar funciones críticas de extracción, procesamiento y clasificación de datos.
-- **Variables de entorno:** Centralización de la configuración mediante archivos `.env` y `.env.example`, evitando la exposición de credenciales y facilitando la portabilidad del proyecto.
-- **Contenedor o estrategia de despliegue:** Implementación de un Dockerfile que incluya las dependencias del sistema, incluyendo Tesseract OCR, permitiendo el despliegue en plataformas PaaS o entornos Linux.
-- **Logs, métricas o evidencia operacional:** Incorporación de logging en el Backend para registrar errores, tiempos de respuesta y trazabilidad del procesamiento de facturas.
-- **Consideraciones de seguridad:** Refuerzo de las reglas de seguridad de Firebase, protección de las API Keys mediante variables de entorno y control de acceso basado en autenticación.
+```text
+Usuario
+   |
+   v
+Frontend Railway / Nginx
+   |
+   v
+Backend Railway / FastAPI
+   |
+   +--> Tesseract OCR
+   |
+   +--> Gemini 2.5 Flash
+   |
+   v
+Resultado estructurado
+   |
+   v
+Dashboard / Firestore
 
-**Diagrama:**
+# Evolución lograda
 
-<img width="178" height="591" alt="Captura de pantalla 2026-07-11 154722" src="https://github.com/user-attachments/assets/71c22e17-5653-440c-bb12-98d6cfbddf5e" />
+Se incorporaron:
 
+API REST con FastAPI.
+Dockerización del backend.
+Contenedor independiente para el frontend mediante Nginx.
+Pruebas automatizadas con Pytest.
+Integración continua con GitHub Actions.
+Observabilidad con request_id, estado HTTP y duración.
+Medición de rendimiento mediante benchmark.
+Manejo explícito de errores HTTP 429.
+Restricción de CORS al frontend público.
+Eliminación de contenido OCR sensible de los logs.
 
+Mejoras futuras:
+
+Modelos Pydantic específicos para respuestas estructuradas.
+Reglas de autorización más fuertes en Firestore.
+Almacenamiento de imágenes en nube.
+Procesamiento mediante colas o workers ante mayor carga.
+Estrategias adicionales de resiliencia frente a servicios externos.
 
 ---
 
@@ -226,21 +295,31 @@ La arquitectura objetivo busca la separación entre interfaz, backend, inteligen
 ```text
 ReceiptIA/
 |
-|-- .github/workflows/   # Pipeline de CI/CD 
+|-- .github/
+|   ├──workflows/ 
+|   ├──ci.yml             # Integración continua: Ruff + Pytest
+|   ├── ...
 |
 |-- Backend/             # Logica del servidor FastAPI, OCR y conexion con Gemini
 |   ├── main.py
+|   ├── Dockerfile
+|   ├── .dockerignore
 |   ├── requirements.txt
 |   ├── .env.example
 |   ├── pyproject.toml
 |   ├── requirements-dev.txt
-|   ├── test/
-|   └── ...
+|   ├── tests/
+|   |      └── test_backend.py
+|   └── evaluacion/
+|       ├── casos_evaluacion.json
+|       ├── evaluar_modelo.py
+|       └── resultados/
 |
 |-- Frontend/            # Interfaz web, autenticacion y Dashboard
 |   ├── index.html
 |   ├── Dashboard.html
 |   ├── Historial.html
+|   ├── Dockerfile             
 |   └── ...
 |
 |-- docs/                # Documentacion tecnica y arquitecturas
@@ -256,12 +335,18 @@ ReceiptIA/
 |   ├── benchmark_resultados.csv
 |   ├── benchmark_resumen.txt
 |   ├── Semana5_Observabilidad_Rendimiento_ReceiptIA.pdf
+|   ├── rollback.md
+|   ├── smoke-tests.md
+|   ├── plan-contingencia-demo.md
+|   ├── ReceipIA Documento Final.pdf
+|   └── Presentacion ReceiptIA final.pptx
 |
 |-- Setup.bat            # Configuracion inicial del proyecto
 |-- benchmark.py
 |-- ReceiptIA.bat        # Inicio automatico del sistema
 |-- README.md            # Documentacion principal
 |-- .gitignore           # Exclusion de archivos sensibles
+|-- release-manifest.yml
 ```
 
 **Notas sobre la estructura:El proyecto adopta una arquitectura cliente-servidor claramente desacoplada. La carpeta Frontend contiene la interfaz web, autenticación y visualización de resultados, mientras que Backend actúa como intermediario entre la aplicación, el motor OCR y el modelo de inteligencia artificial.
@@ -307,15 +392,19 @@ pip install -r requirements.txt
 
 ### Construir la imagen
 
-```bash
-docker build -t receiptia .
-```
-
-### Ejecutar el contenedor
+### Backend mediante Docker
 
 ```bash
-docker run -p 8000:8000 receiptia
+cd Backend
+docker build -t receiptia-backend .
 ```
+
+# Localmente
+
+docker run -p 8000:8000 \
+  -e GEMINI_API_KEY=TU_API_KEY \
+  receiptia-backend
+
 
 ### Verificar funcionamiento
 
@@ -337,6 +426,9 @@ Endpoint principal:
 POST /procesar
 ```
 
+Metadata:
+http://localhost:8000/metadata
+
 ### Ejecución
 
 # Ejecucion Manual Backend
@@ -356,8 +448,6 @@ El proyecto utiliza un archivo .env ubicado en la carpeta Backend/.
 | Variable | Descripción | Obligatoria |
 |---|---|---|
 | GEMINI_API_KEY | Clave de acceso a la API de Google Gemini | Sí |
-| GEMINI_MODEL | Modelo principal utilizado para el procesamiento | No |
-| GEMINI_FALLBACK_MODEL | Modelo alternativo en caso de saturación del principal | No |
 | TESSERACT_CMD | Ruta manual del ejecutable de Tesseract OCR | No |
 
 ## 11. API REST
@@ -368,30 +458,28 @@ La funcionalidad inteligente de ReceiptIA se encuentra expuesta mediante FastAPI
 
 | Método | Endpoint | Descripción |
 |---------|----------|-------------|
+| GET | / | Información general del backend |
 | GET | /health | Estado del servicio |
 | GET | /metadata | Información general de la API |
 | POST | /procesar | Procesa una factura individual |
 | POST | /procesar-lote | Procesa múltiples facturas |
-| POST | /leer-texto | Extrae únicamente el texto OCR |
 
 ## 12. Pruebas Automatizadas y CI/CD 
 
-El proyecto cuenta con un conjunto de pruebas automatizadas y un pipeline de Integracion Continua mediante GitHub Actions.
+El proyecto cuenta con pruebas automatizadas y un pipeline de Integración Continua mediante GitHub Actions.
 
-### Ejecución de pruebas locales
-Para ejecutar las pruebas se debe de estar dentro del entorno virtual y tener instaladas las dependencias de desarrollo.
+El workflow ejecuta:
 
-1. Instalar requerimientos de desarrollo:
-   ```bash
-   python -m pip install -r Backend/requirements-dev.txt
+- Instalación de Python 3.12.
+- Instalación de Tesseract OCR.
+- Instalación de dependencias de desarrollo.
+- Análisis estático con Ruff.
+- Pruebas automatizadas con Pytest.
+- Generación de un reporte JUnit como artifact.
 
-2. analisis estatico con Ruff:
-cd Backend
-python -m ruff check .
+El despliegue público se realiza mediante Railway.
 
-3. pruebas con Pytest:
-cd Backend
-python -m pytest -v
+No se afirma que GitHub Actions realice directamente el despliegue a producción.
 
 ## 13. Datos Utilizados
 
@@ -417,27 +505,43 @@ La precisión del OCR depende de:
 -Resolución.
 -Legibilidad del documento.
 
+### Datos utilizados en demostraciones
+
+Para las demostraciones públicas de ReceiptIA se utilizan únicamente comprobantes ficticios o datos expresamente autorizados.
+
+No se deben mostrar durante la demostración:
+
+- API Keys.
+- Tokens.
+- Credenciales.
+- Datos personales reales no autorizados.
+- Información sensible almacenada en logs.
+
 ---
 
 ## 14. Riesgos Técnicos y Deuda Técnica
 
 | Riesgo | Categoría | Probabilidad | Impacto | Mitigación propuesta |
-|---|---|---|---|---|
-|  | Datos / Modelo / Código / Seguridad / Despliegue | Baja / Media / Alta | Bajo / Medio / Alto |  
+|---|---|---|---|---| 
 | Dependencia de Tesseract OCR instalado localmente | Dependencias | Alta | Alto | Automatizar instalación mediante Setup.bat y Docker
 | Saturación o indisponibilidad temporal de Gemini | Servicios Externos | Media | Alto | Implementar reintentos automáticos y modelos alternativos |
 | Dependencia de conexión a Internet | Infraestructura | Media | Alto | Validaciones y manejo de errores |
-| Límites de cuota de Gemini | Servicios Externos | Alta | Alto | Manejo de HTTP 429, reintentos controlados, modelos alternativos y futura estrategia de colas/workers |
+| Imagen con baja calidad | Datos / OCR | Media | Medio | Preprocesamiento de imagen y revisión manual |
+| Indisponibilidad de Railway | Infraestructura | Baja/Media | Alto | Health, verificación previa y plan de contingencia |
+| Sesión Firebase vencida | Autenticación | Media | Medio | Reingreso con cuenta de demostración |
+| Configuración CORS incorrecta | Seguridad / despliegue | Baja | Alto | CORS limitado al frontend público |
+| Exposición de información en logs | Seguridad | Baja | Alto | Se eliminaron fragmentos OCR de los logs |
 
 ## 15. Plan de Mejora por Semana
 
 | Semana | Mejora esperada | Evidencia esperada |
 |---|---|---|
-| Semana 2 | Implementación de modelos Pydantic y contratos de entrada/salida | Endpoint inteligente, Swagger y validaciones |
+| Semana 2 | Contratos y documentación de API | UploadFile, tipos, OpenAPI y Swagger; Pydantic específico quedó pendiente |
 | Semana 3 | Integración de pytest y automatización de pruebas | Tests unitarios y evidencia de ejecución |
 | Semana 4 | Creación de Dockerfile y estrategia de despliegue | Contenedor funcional y entorno de prueba |
 | Semana 5 | Implementación de logging, métricas y monitoreo | Logs, métricas y análisis de rendimiento |
 | Semana 6 | Revisión de seguridad, documentación y preparación de defensa | README final, presentación y demostración |
+| Semana 7 | Despliegue público, seguridad final, release y defensa | URLs públicas, README final, manifiesto, contingencia, tag/release y demostración |
 
 ## 16. Limitaciones Actuales
 
@@ -445,9 +549,14 @@ La precisión del OCR depende de:
 - La precisión del OCR disminuye cuando las imágenes tienen baja calidad o están deterioradas.
 - El sistema está optimizado para facturas y tickets en español y puede presentar limitaciones con otros formatos o idiomas.
 - El procesamiento depende de servicios externos que pueden experimentar saturación temporal.
-- Actualmente no existe un despliegue en producción; las pruebas automatizadas se ejecutan mediante Pytest y el pipeline de CI/CD mediante GitHub Actions.
-- El despliegue se ha validado localmente mediante Docker.
-- Aun no existe un despliegue en produccion (Render, Railway, Azure, etc.).
+- El frontend y el backend se encuentran desplegados públicamente en Railway.
+- La disponibilidad del procesamiento depende también de servicios externos como Gemini y Firebase.
+- No se garantiza exactitud fiscal absoluta.
+- Los resultados generados por IA sirven como apoyo a la auditoría y requieren revisión humana cuando exista duda.
+- El backend maneja el HTTP 429 como una falla controlada y devuelve un mensaje seguro al cliente.
+- Durante las pruebas se observaron respuestas `HTTP 429 RESOURCE_EXHAUSTED` al alcanzar la cuota disponible.
+
+
 
 ## 17. Evidencias *ACTUALIZADO
 
@@ -477,29 +586,36 @@ Google GenAI SDK: Cliente oficial para la integración con la API de Gemini.
 
 ## 19. Versiones
 
-## Versiones
-
 | Version | Descripcion |
 |----------|-------------|
 | v0.4.0 | Docker e infraestructura inicial |
 | v0.5.0 | Observabilidad, rendimiento y escalabilidad |
+| v1.0.0 | Candidata a release final: despliegue público, seguridad y cierre integrador |
 
 ## 20. Checklist de Revisión
 
-* [x] El PDF corresponde al proyecto real y define un endpoint o flujo crítico.
-* [x] Se documentan preguntas de observabilidad.
-* [x] Existe `request_id` o correlación equivalente.
-* [x] Se registran estado, duración y versión del componente IA.
-* [x] Se presenta un evento exitoso y un error controlado.
-* [x] No se publican claves, tokens ni datos sensibles.
-* [x] Se documenta el escenario de medición.
-* [x] Se ejecutan al menos 20 solicitudes o se documenta el bloqueo.
-* [x] Se incluyen p50, p95, máximo y tasa de error.
-* [x] Se identifica un cuello de botella o riesgo.
-* [x] Se explica una mejora aplicada o propuesta.
-* [x] Se incluye un plan de escalabilidad basado en indicadores.
-* [x] README, repositorio, medición y evidencias están actualizados.
-* [x] El PDF contiene el enlace funcional al repositorio.
-
+Producto, GitHub y evidencia - Presentación, contingencia y entrega
+[x] La URL pública funciona en ventana privada.
+[x] El flujo principal usa datos seguros.
+[x] Versión, release y commit coinciden.
+[x] Existe error o límite gestionado.
+[x] README, informe y presentación están en GitHub.
+[x] PDF y fuente editable abren correctamente.
+[x] El informe integra las seis sesiones.
+[x] Pruebas, pipeline y despliegue son verificables.
+[x] Observabilidad y métricas son verificables.
+[x] Riesgos, controles y rollback están documentados.
+[x] No hay secretos ni datos personales expuestos.
+[x] La presentación ensayada dura 7 minutos.
+[x] La demostración real dura 3 minutos.
+[x] Todos tienen intervención sustantiva.
+[x] Los cambios de expositor fueron ensayados.
+[x] Cuenta, datos y pestañas están preparados.
+[x] Se revisaron tokens, cuotas y vencimientos.
+[x] Existe video y capturas de respaldo.
+[x] Se probaron red, audio y segundo dispositivo.
+[x] Canvas contiene todos los enlaces.
+[x] Una persona externa probó los enlaces.
+[x] El equipo conserva el release evaluado.
 
 
