@@ -1,9 +1,9 @@
 release:
   name: ReceiptIA
   version: "1.0.0"
-  status: "release-candidate"
-  commit: "PENDIENTE_COMMIT_FINAL"
-  tag: "PENDIENTE_TAG_FINAL"
+  status: "final"
+  commit: "resolved-by-tag-v1.0.0"
+  tag: "v1.0.0"
 
 application:
   frontend_url: "https://receiptia-production-c5cc.up.railway.app"
