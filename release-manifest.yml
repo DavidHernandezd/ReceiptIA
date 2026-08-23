@@ -1,0 +1,83 @@
+release:
+  name: ReceiptIA
+  version: "1.0.0"
+  status: "release-candidate"
+  commit: "PENDIENTE_COMMIT_FINAL"
+  tag: "PENDIENTE_TAG_FINAL"
+
+application:
+  frontend_url: "https://receiptia-production-c5cc.up.railway.app"
+  backend_url: "https://receiptia-production.up.railway.app"
+  health_url: "https://receiptia-production.up.railway.app/health"
+  metadata_url: "https://receiptia-production.up.railway.app/metadata"
+  api_docs_url: "https://receiptia-production.up.railway.app/docs"
+
+backend:
+  framework: "FastAPI"
+  runtime: "Python 3.12"
+  deployment: "Railway"
+  containerized: true
+  dockerfile: "Backend/Dockerfile"
+
+frontend:
+  technology: "HTML + JavaScript"
+  server: "Nginx"
+  deployment: "Railway"
+  containerized: true
+  dockerfile: "Frontend/Dockerfile"
+
+ai:
+  ocr:
+    name: "Tesseract OCR"
+  generative_model:
+    provider: "Google"
+    model: "gemini-2.5-flash"
+  prompt_version: "1.0"
+
+data_and_auth:
+  authentication: "Firebase Authentication"
+  persistence: "Firebase Firestore"
+
+testing:
+  framework: "pytest"
+  static_analysis: "ruff"
+  workflow: ".github/workflows/ci.yml"
+  benchmark:
+    endpoint: "POST /procesar"
+    total_requests: 20
+    successful_requests: 16
+    errors: 4
+    error_rate_percent: 20.0
+    p50_ms: 10682.07
+    p95_ms: 13712.31
+    max_ms: 17725.83
+
+observability:
+  request_id: true
+  http_status: true
+  duration_ms: true
+  app_version: "1.0.0"
+  ai_model_logged: true
+  prompt_version_logged: true
+
+security:
+  secrets_in_environment_variables: true
+  cors_restricted_to_production_frontend: true
+  sensitive_ocr_content_removed_from_logs: true
+  firestore_rules_verified: false
+
+known_limits:
+  - "Gemini está sujeto a límites de cuota."
+  - "Durante pruebas se observaron respuestas HTTP 429 RESOURCE_EXHAUSTED."
+  - "La calidad del OCR depende de la calidad y legibilidad de la imagen."
+  - "Los resultados de IA requieren revisión humana cuando exista duda."
+  - "No se garantiza exactitud fiscal absoluta."
+
+rollback:
+  documented: false
+  procedure_file: "PENDIENTE"
+
+demo:
+  contingency_plan: "PENDIENTE"
+  smoke_tests: "PENDIENTE"
+  demo_data: "fictitious-or-authorized"
