@@ -52,19 +52,32 @@ testing:
     p95_ms: 13712.31
     max_ms: 17725.83
 
+ai_evaluation:
+  implemented: true
+  cases_total: 4
+  cases_completed: 4
+  execution_errors: 0
+  precision_on_evaluated_fields_percent: 100.0
+  results_file: "Backend/evaluacion/resultados/resumen_evaluacion.json"
+  note: "El resultado corresponde únicamente a los casos y campos evaluados y no representa precisión general garantizada."
+
 observability:
+  structured_logs: true
   request_id: true
   http_status: true
   duration_ms: true
   app_version: "1.0.0"
   ai_model_logged: true
   prompt_version_logged: true
+  sensitive_ocr_content_logged: false
+  scheduled_health_monitoring: true
 
 security:
   secrets_in_environment_variables: true
   cors_restricted_to_production_frontend: true
   sensitive_ocr_content_removed_from_logs: true
   firestore_rules_verified: false
+  demo_uses_fictitious_or_authorized_data: true
 
 known_limits:
   - "Gemini está sujeto a límites de cuota."
@@ -72,12 +85,14 @@ known_limits:
   - "La calidad del OCR depende de la calidad y legibilidad de la imagen."
   - "Los resultados de IA requieren revisión humana cuando exista duda."
   - "No se garantiza exactitud fiscal absoluta."
+  - "La disponibilidad depende de servicios externos como Gemini, Firebase y Railway."
 
 rollback:
-  documented: false
-  procedure_file: "PENDIENTE"
+  documented: true
+  procedure_file: "docs/rollback.md"
 
 demo:
-  contingency_plan: "PENDIENTE"
-  smoke_tests: "PENDIENTE"
+  contingency_plan: "docs/plan-contingencia-demo.md"
+  smoke_tests: "docs/smoke-tests.md"
   demo_data: "fictitious-or-authorized"
+  public_flow_verified: true
