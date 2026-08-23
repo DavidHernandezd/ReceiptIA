@@ -246,7 +246,7 @@ ReceiptIA utiliza actualmente una arquitectura cliente-servidor desacoplada y de
 
 ### Flujo principal
 
-```text
+
 Usuario
    |
    v
@@ -287,7 +287,6 @@ Reglas de autorización más fuertes en Firestore.
 Almacenamiento de imágenes en nube.
 Procesamiento mediante colas o workers ante mayor carga.
 Estrategias adicionales de resiliencia frente a servicios externos.
-
 ---
 
 ## 9. Estructura del Repositorio *ACTUALIZADO
